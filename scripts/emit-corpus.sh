@@ -34,4 +34,9 @@ strip --strip-all "$BIN/vendor_aes_stripped.so"
 # PE firmware-style blob with embedded crypto tables
 npx --yes tsx "$ROOT/scripts/gen-pe-sample.ts"
 
-echo "wrote $OUT and $BIN (incl. stripped vendor, .so, PE)"
+# Holdout binaries (excluded from catalog / training demos)
+mkdir -p "$BIN/holdout"
+clang -c -O2 -fno-ident -o "$BIN/holdout/vendor_aes_holdout.o" "$SRC/vendor_openssl_aes.c"
+strip --strip-all "$BIN/holdout/vendor_aes_holdout.o"
+
+echo "wrote $OUT and $BIN (incl. stripped vendor, .so, PE, holdout)"
