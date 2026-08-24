@@ -7,14 +7,22 @@ import {
   CURVE25519_CLAMP,
   CURVE25519_P_HEAD,
   DES_IP_HEAD,
+  DRBG_HASH_LABEL,
+  DRBG_HMAC_LABEL,
   GHASH_R_BE,
   GHASH_R_LE,
+  HASH_DRBG_V0_HEAD,
   HMAC_IPAD_HEAD,
   HMAC_OPAD_HEAD,
   MD5_T_HEAD,
   OPENSSL_TE0_HEAD,
+  RSA_PKCS1_OID,
+  RSA_PUBEXP_65537,
   SHA1_K,
   SHA256_K_HEAD,
+  TLS_CIPHER_HEAD,
+  TLS_CIPHER_HEAD_LE,
+  TLS_RECORD_12,
   bytesContain,
   wordsContain,
 } from "./signatures";
@@ -222,6 +230,56 @@ export function classify(
       h.notes.push("RFC 7748 X25519 ECDH; verify clamping on scalar multiply.");
       for (const f of functionsUsing(functions, g.name)) h.functions.add(f.name);
     }
+
+    if (bytesContain(g.bytes, RSA_PKCS1_OID)) {
+      const h = take("RSA-key");
+      h.score += 0.7;
+      h.evidence.push({
+        kind: "constant-table",
+        summary: `PKCS#1 rsaEncryption OID in @${g.name}`,
+        line: g.line,
+      });
+      h.notes.push("RSA public-key material present; audit modulus length (≥2048 bits recommended).");
+      for (const f of functionsUsing(functions, g.name)) h.functions.add(f.name);
+    }
+
+    if (bytesContain(g.bytes, RSA_PUBEXP_65537)) {
+      const h = take("RSA-key");
+      h.score += 0.45;
+      h.evidence.push({
+        kind: "constant-table",
+        summary: `RSA public exponent 65537 DER in @${g.name}`,
+        line: g.line,
+      });
+    }
+
+    if (bytesContain(g.bytes, TLS_CIPHER_HEAD) || bytesContain(g.bytes, TLS_CIPHER_HEAD_LE) || bytesContain(g.bytes, TLS_RECORD_12)) {
+      const h = take("TLS-stack");
+      h.score += bytesContain(g.bytes, TLS_CIPHER_HEAD) || bytesContain(g.bytes, TLS_CIPHER_HEAD_LE) ? 0.65 : 0.4;
+      h.evidence.push({
+        kind: "constant-table",
+        summary: `TLS ${bytesContain(g.bytes, TLS_CIPHER_HEAD) || bytesContain(g.bytes, TLS_CIPHER_HEAD_LE) ? "cipher suite list" : "record version 0x0303"} in @${g.name}`,
+        line: g.line,
+      });
+      h.notes.push("TLS stack fingerprint; review cipher order and deprecated suites (RC4, 3DES, export).");
+      for (const f of functionsUsing(functions, g.name)) h.functions.add(f.name);
+    }
+
+    if (
+      bytesContain(g.bytes, DRBG_HASH_LABEL) ||
+      bytesContain(g.bytes, DRBG_HMAC_LABEL) ||
+      bytesContain(g.bytes, HASH_DRBG_V0_HEAD)
+    ) {
+      const h = take("DRBG");
+      h.score += 0.6;
+      h.evidence.push({
+        kind: "constant-table",
+        summary: `NIST SP 800-90A DRBG marker or KAT vector in @${g.name}`,
+        line: g.line,
+      });
+      h.notes.push("Deterministic random bit generator; verify seed entropy and reseed policy.");
+      for (const f of functionsUsing(functions, g.name)) h.functions.add(f.name);
+    }
   }
 
   for (const f of functions) {
@@ -322,6 +380,39 @@ export function classify(
       });
     }
 
+    if (nameHint(f, /tls|ssl|cipher_suite|record_layer/i)) {
+      const h = take("TLS-stack");
+      h.functions.add(f.name);
+      h.score += 0.35;
+      h.evidence.push({
+        kind: "name",
+        summary: `Function name ${f.name} matches TLS/SSL stack`,
+        line: f.startLine,
+      });
+    }
+
+    if (nameHint(f, /drbg|random|rng|entropy/i)) {
+      const h = take("DRBG");
+      h.functions.add(f.name);
+      h.score += 0.3;
+      h.evidence.push({
+        kind: "name",
+        summary: `Function name ${f.name} matches DRBG/RNG`,
+        line: f.startLine,
+      });
+    }
+
+    if (nameHint(f, /rsa_key|rsapub|public_key|pkcs/i)) {
+      const h = take("RSA-key");
+      h.functions.add(f.name);
+      h.score += 0.35;
+      h.evidence.push({
+        kind: "name",
+        summary: `Function name ${f.name} matches RSA key material`,
+        line: f.startLine,
+      });
+    }
+
     if (nameHint(f, /md5/i)) {
       const h = take("MD5");
       h.functions.add(f.name);
@@ -381,7 +472,7 @@ export function classify(
 
 export function severityFor(p: PrimitiveId): Severity {
   if (p === "MD5" || p === "SHA-1" || p === "DES" || p === "CRC32") return "weak";
-  if (p === "RSA-modexp") return "info";
+  if (p === "RSA-modexp" || p === "RSA-key") return "info";
   return "ok";
 }
 
@@ -405,6 +496,12 @@ export function titleFor(p: PrimitiveId): string {
       return "Curve25519 / X25519 ECDH";
     case "RSA-modexp":
       return "Integer modular exponentiation (RSA-like)";
+    case "RSA-key":
+      return "RSA PKCS#1 public-key material";
+    case "TLS-stack":
+      return "TLS cipher suite / record-layer constants";
+    case "DRBG":
+      return "NIST SP 800-90A deterministic RNG (DRBG)";
     case "CRC32":
       return "CRC-32 checksum";
     case "DES":
@@ -432,6 +529,12 @@ export function rationaleFor(p: PrimitiveId): string {
       return "RFC 7748 base point 9, clamp mask, or field prime constants.";
     case "RSA-modexp":
       return "Square-and-multiply loop with multiply + remainder; typical of RSA/DH exp.";
+    case "RSA-key":
+      return "PKCS#1 rsaEncryption OID and/or public exponent 65537 in constant data.";
+    case "TLS-stack":
+      return "TLS 1.2 record version and/or IANA cipher suite identifiers in rodata.";
+    case "DRBG":
+      return "Hash_DRBG / HMAC_DRBG label or NIST CAVP state vector in constant data.";
     case "CRC32":
       return "Reflected IEEE CRC-32 polynomial appears as an immediate or table.";
     case "DES":

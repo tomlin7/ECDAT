@@ -74,6 +74,23 @@ export const CURVE25519_BASE = [9, 0, 0, 0, 0, 0, 0, 0];
 export const CURVE25519_CLAMP = [0xf8, 0xff, 0xff, 0xff];
 export const CURVE25519_P_HEAD = [0xffffffed, 0xffffffff, 0xffffffff, 0x7fffffff];
 
+/** RSA PKCS#1 rsaEncryption OID (1.2.840.113549.1.1.1). */
+export const RSA_PKCS1_OID = [0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01];
+export const RSA_PUBEXP_65537 = [0x02, 0x03, 0x01, 0x00, 0x01];
+
+/** TLS 1.2 record version + common cipher suites (IANA, big-endian uint16). */
+export const TLS_RECORD_12 = [0x03, 0x03];
+export const TLS_CIPHER_HEAD = [0x13, 0x01, 0x13, 0x02, 0x13, 0x03, 0xc0, 0x2f];
+export const TLS_CIPHER_HEAD_LE = [0x01, 0x13, 0x02, 0x13, 0x03, 0x13, 0x2f, 0xc0];
+
+/** NIST SP 800-90A DRBG labels. */
+export const DRBG_HASH_LABEL = [...new TextEncoder().encode("Hash_DRBG")];
+export const DRBG_HMAC_LABEL = [...new TextEncoder().encode("HMAC_DRBG")];
+export const HASH_DRBG_V0_HEAD = [
+  0x1a, 0x88, 0xc2, 0x47, 0x28, 0x1f, 0x71, 0x77, 0xca, 0x03, 0x26, 0x53,
+  0xda, 0x42, 0xbc, 0x94,
+];
+
 export function u32(n: number): number {
   return n >>> 0;
 }

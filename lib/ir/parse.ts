@@ -47,7 +47,7 @@ export function extractGlobals(ir: string): GlobalConstant[] {
   const lines = ir.split(/\r?\n/);
   const globals: GlobalConstant[] = [];
   const header =
-    /@([\w.$]+)\s*=\s*(?:internal\s+)?(?:private\s+)?(?:unnamed_addr\s+)?(?:local_unnamed_addr\s+)?constant\s+/;
+    /@([\w.$]+)\s*=\s*(?:(?:internal|private|dso_local|dllimport|external|weak|common)\s+)*(?:unnamed_addr\s+)?(?:local_unnamed_addr\s+)?constant\s+/;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];

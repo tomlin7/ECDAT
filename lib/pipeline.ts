@@ -26,6 +26,9 @@ const CRYPTO_LABELS = new Set<PrimitiveId>([
   "ChaCha20",
   "Curve25519",
   "RSA-modexp",
+  "RSA-key",
+  "TLS-stack",
+  "DRBG",
   "CRC32",
   "DES",
 ]);
