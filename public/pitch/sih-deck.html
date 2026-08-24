@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>ECDAT — SIH26164 Pitch</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,sans-serif;background:#0a0f0d;color:#e8f5ef;overflow:hidden}
+    .deck{height:100vh;width:100vw;position:relative}
+    .slide{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;padding:4rem 6rem;opacity:0;transition:opacity .35s}
+    .slide.active{display:flex;opacity:1}
+    h1{font-size:2.4rem;line-height:1.15;margin-bottom:1rem;font-weight:700}
+    h2{font-size:1.35rem;color:#6ee7b7;font-weight:600;margin-bottom:1.25rem}
+    p,li{font-size:1.15rem;line-height:1.55;color:#b8d4c8;max-width:52rem}
+    ul{margin:1rem 0 0 1.4rem}
+    li{margin:.35rem 0}
+    .tag{font-family:ui-monospace,monospace;font-size:.85rem;color:#34d399;background:#064e3b55;border:1px solid #05966944;padding:.2rem .55rem;border-radius:.35rem;display:inline-block;margin-bottom:1rem}
+    .arch{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1.5rem;max-width:56rem}
+    .box{border:1px solid #05966955;background:#022c2266;border-radius:.75rem;padding:1rem 1.1rem}
+    .box strong{display:block;color:#6ee7b7;font-size:.95rem;margin-bottom:.35rem}
+    .box span{font-size:.85rem;color:#94a89e;line-height:1.4}
+    .flow{margin-top:1.5rem;font-family:ui-monospace,monospace;font-size:.9rem;color:#a7f3d0;background:#022c22;padding:1rem 1.25rem;border-radius:.5rem;max-width:56rem;line-height:1.7}
+    .nav{position:fixed;bottom:1.5rem;right:2rem;display:flex;gap:.5rem;z-index:10}
+    button{background:#059669;color:#fff;border:none;padding:.55rem 1rem;border-radius:.4rem;cursor:pointer;font-size:.9rem}
+    button:disabled{opacity:.35;cursor:default}
+    .progress{position:fixed;bottom:0;left:0;height:3px;background:#059669;transition:width .3s}
+    .demo{font-family:ui-monospace,monospace;font-size:.82rem;background:#00000066;border:1px solid #05966944;border-radius:.5rem;padding:1rem;margin-top:1rem;max-width:56rem;line-height:1.6;color:#a7f3d0}
+  </style>
+</head>
+<body>
+<div class="deck" id="deck">
+  <section class="slide active">
+    <span class="tag">SIH26164 · NTRO · Software, Blockchain &amp; Cybersecurity</span>
+    <h1>ECDAT<br/>Enterprise Cryptographic Discovery &amp; Analysis Tool</h1>
+    <p>Static inventory of crypto primitives in LLVM IR and stripped binaries — no execution, no evasion kit.</p>
+  </section>
+
+  <section class="slide">
+    <h2>Problem</h2>
+    <ul>
+      <li>Enterprises ship unknown crypto: weak MD5/SHA-1, table AES, RSA modexp.</li>
+      <li>Firmware and vendor blobs hide algorithms behind stripped symbols.</li>
+      <li>Security teams need evidence-backed inventory, not guesswork.</li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <h2>Three-channel architecture</h2>
+    <div class="arch">
+      <div class="box"><strong>① IR signatures</strong><span>FIPS/RFC constant tables in Clang LLVM IR (.ll)</span></div>
+      <div class="box"><strong>② CFG softmax model</strong><span>Logistic regression on opcode/graph features; trained on clean + mutated IR</span></div>
+      <div class="box"><strong>③ Raw byte scan</strong><span>S-box, K[], ChaCha sigma, HMAC ipad/opad in ELF/PE images</span></div>
+    </div>
+    <div class="flow">drop .ll / .o → parse &amp; classify → fuse findings → enterprise inventory (JSON/HTML)</div>
+  </section>
+
+  <section class="slide">
+    <h2>Catalog (today)</h2>
+    <ul>
+      <li>AES, AES-GCM (GHASH), SHA-256/1, MD5, HMAC-SHA256, ChaCha20, Curve25519, RSA-modexp, CRC-32</li>
+      <li>Weak/deprecated flagged: MD5, SHA-1, CRC-32, DES</li>
+      <li>Corpus + <code>npm run verify</code> green on IR and stripped objects</li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <h2>Live demo path (~2 min)</h2>
+    <ol style="margin-left:1.4rem;font-size:1.1rem;color:#b8d4c8;line-height:1.7;max-width:52rem">
+      <li>Load <strong>Enterprise mix (IR)</strong> → AES + SHA-256 + ChaCha + MD5 + RSA-modexp</li>
+      <li>Click weak MD5 finding → constant-table evidence</li>
+      <li>Load <strong>Stripped vendor AES (.o)</strong> → S-box at file offset, no symbols</li>
+      <li>Load <strong>Stripped enterprise mix (.o)</strong> → multi-primitive byte scan</li>
+      <li>Inventory tab → Export JSON / HTML report</li>
+    </ol>
+    <div class="demo">http://127.0.0.1:43147 · npm run dev</div>
+  </section>
+
+  <section class="slide">
+    <h2>Differentiators</h2>
+    <ul>
+      <li>LLVM + AI story: signatures + independent CFG model corroboration</li>
+      <li>Works on stripped real binaries, not just named lab IR</li>
+      <li>Enterprise inventory export with severity + recommendations</li>
+      <li>Honest static scope — inventory, not malware or packing</li>
+    </ul>
+  </section>
+
+  <section class="slide">
+    <h2>Roadmap (post-SIH)</h2>
+    <ul>
+      <li>PE / firmware lift to IR when bitcode unavailable</li>
+      <li>OpenSSL / libsodium IR in training holdout (wild validation)</li>
+      <li>TLS stack fingerprinting, key-length heuristics, org asset tagging</li>
+    </ul>
+    <p style="margin-top:1.5rem;font-size:1rem;color:#6ee7b7">ECDAT — SIH26164 · NTRO · Blockchain &amp; Cybersecurity</p>
+  </section>
+</div>
+<div class="progress" id="progress"></div>
+<div class="nav">
+  <button id="prev" disabled>← Prev</button>
+  <button id="next">Next →</button>
+</div>
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=0;
+  const prog=document.getElementById('progress');
+  const prev=document.getElementById('prev');
+  const next=document.getElementById('next');
+  function show(n){
+    slides[i].classList.remove('active');
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides[i].classList.add('active');
+    prog.style.width=((i+1)/slides.length*100)+'%';
+    prev.disabled=i===0; next.disabled=i===slides.length-1;
+  }
+  prev.onclick=()=>show(i-1);
+  next.onclick=()=>show(i+1);
+  document.onkeydown=e=>{
+    if(e.key==='ArrowRight'||e.key===' ')show(i+1);
+    if(e.key==='ArrowLeft')show(i-1);
+  };
+  show(0);
+</script>
+</body>
+</html>

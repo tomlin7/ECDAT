@@ -1,9 +1,12 @@
 export type PrimitiveId =
   | "AES"
+  | "AES-GCM"
   | "SHA-256"
   | "SHA-1"
   | "MD5"
+  | "HMAC-SHA256"
   | "ChaCha20"
+  | "Curve25519"
   | "RSA-modexp"
   | "CRC32"
   | "DES";
@@ -91,4 +94,37 @@ export type AnalysisReport = {
     trainedOn: number;
     predictions: MlFunctionPred[];
   } | null;
+  inventory: EnterpriseInventory;
+};
+
+export type InventoryRow = {
+  id: string;
+  primitive: PrimitiveId;
+  title: string;
+  severity: Severity;
+  confidence: number;
+  source: FindingSource;
+  channels: string[];
+  locations: string[];
+  recommendation: string;
+  evidenceCount: number;
+  notes: string[];
+};
+
+export type EnterpriseInventory = {
+  schema: string;
+  assetId: string;
+  businessUnit: string;
+  scannedAt: string;
+  filename: string;
+  ingestKind: IngestKind;
+  byteSize: number;
+  targetTriple: string | null;
+  channelsUsed: { signatures: boolean; ml: boolean; binary: boolean };
+  primitiveCount: number;
+  weakCount: number;
+  counts: { weak: number; ok: number; review: number };
+  rows: InventoryRow[];
+  summary: string;
+  mlHoldout: number | null;
 };

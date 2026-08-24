@@ -4,6 +4,7 @@ import { scanBinaryConstants } from "./binary/scan";
 import { extractFunctions, extractGlobals, extractTargetTriple, looksLikeLlvmIr } from "./ir/parse";
 import { functionFeatures } from "./ml/features";
 import { predictLogReg, type LogRegModel } from "./ml/logreg";
+import { buildEnterpriseInventory } from "./report";
 import modelJson from "./ml/model.json";
 import type {
   AnalysisReport,
@@ -17,10 +18,13 @@ import type {
 const MODEL = modelJson as LogRegModel;
 const CRYPTO_LABELS = new Set<PrimitiveId>([
   "AES",
+  "AES-GCM",
   "SHA-256",
   "SHA-1",
   "MD5",
+  "HMAC-SHA256",
   "ChaCha20",
+  "Curve25519",
   "RSA-modexp",
   "CRC32",
   "DES",
@@ -145,6 +149,7 @@ export function analyzeArtifact(buf: Uint8Array, filename: string): AnalysisRepo
   const fused = fuse(findings);
   const weakCount = fused.filter((f) => f.severity === "weak").length;
   const names = fused.map((f) => f.primitive);
+  const scannedAt = new Date().toISOString();
   const summary =
     fused.length === 0
       ? isIr
@@ -154,26 +159,40 @@ export function analyzeArtifact(buf: Uint8Array, filename: string): AnalysisRepo
           weakCount ? ` — ${weakCount} flagged weak/deprecated` : ""
         }.`;
 
+  const ml =
+    predictions.length || channels.ml
+      ? {
+          version: MODEL.version,
+          trainAccuracy: MODEL.trainAccuracy,
+          holdoutAccuracy: MODEL.holdoutAccuracy,
+          trainedOn: MODEL.trainedOn,
+          predictions,
+        }
+      : null;
+
+  const truncated = truncateFns(functions);
+
   return {
     filename,
-    scannedAt: new Date().toISOString(),
+    scannedAt,
     targetTriple: triple,
     functionCount: functions.length,
-    functions: truncateFns(functions),
+    functions: truncated,
     findings: fused,
     weakCount,
     summary,
     ingest: { kind, bytes: buf.length, channels },
-    ml:
-      predictions.length || channels.ml
-        ? {
-            version: MODEL.version,
-            trainAccuracy: MODEL.trainAccuracy,
-            holdoutAccuracy: MODEL.holdoutAccuracy,
-            trainedOn: MODEL.trainedOn,
-            predictions,
-          }
-        : null,
+    ml,
+    inventory: buildEnterpriseInventory({
+      filename,
+      scannedAt,
+      targetTriple: triple,
+      findings: fused,
+      weakCount,
+      summary,
+      ingest: { kind, bytes: buf.length, channels },
+      mlHoldout: ml?.holdoutAccuracy ?? null,
+    }),
   };
 }
 

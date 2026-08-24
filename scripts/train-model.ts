@@ -5,12 +5,15 @@ import { obfuscateIr } from "../lib/ir/obfuscate";
 import { FEATURE_NAMES, functionFeatures } from "../lib/ml/features";
 import { trainLogReg } from "../lib/ml/logreg";
 
-const LABELS = ["BENIGN", "AES", "SHA-256", "SHA-1", "MD5", "ChaCha20", "RSA-modexp"] as const;
+const LABELS = ["BENIGN", "AES", "AES-GCM", "SHA-256", "SHA-1", "MD5", "HMAC-SHA256", "ChaCha20", "Curve25519", "RSA-modexp"] as const;
 
 function labelFunction(file: string, name: string): (typeof LABELS)[number] | null {
   const f = file.toLowerCase();
   const n = name.toLowerCase();
   if (n.startsWith("llvm.")) return null;
+  if (/hmac/.test(n)) return "HMAC-SHA256";
+  if (/gcm|ghash/.test(n)) return "AES-GCM";
+  if (/curve25519|x25519/.test(n)) return "Curve25519";
   if (/aes|sbox|mix_column|sub_bytes|xtime|add_round/.test(n)) return "AES";
   if (/sha256/.test(n)) return "SHA-256";
   if (/sha1/.test(n)) return "SHA-1";
@@ -20,6 +23,10 @@ function labelFunction(file: string, name: string): (typeof LABELS)[number] | nu
   if (/inventory|copy_record|find_parcel/.test(n)) return "BENIGN";
   if (f.includes("enterprise") || /mix\.ll/.test(f)) return null;
   if (f.includes("benign") || f.includes("crc")) return "BENIGN";
+  if (f.includes("hmac")) return "HMAC-SHA256";
+  if (f.includes("aes_gcm") || f.includes("gcm")) return "AES-GCM";
+  if (f.includes("curve25519")) return "Curve25519";
+  if (f.includes("vendor_openssl")) return "AES";
   if (f.includes("aes")) return "AES";
   if (f.includes("sha256")) return "SHA-256";
   if (f.includes("sha1")) return "SHA-1";

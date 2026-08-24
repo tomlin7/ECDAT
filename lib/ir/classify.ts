@@ -3,8 +3,16 @@ import {
   AES_SBOX_TAIL,
   CHACHA_SIGMA,
   CRC32_POLY,
+  CURVE25519_BASE,
+  CURVE25519_CLAMP,
+  CURVE25519_P_HEAD,
   DES_IP_HEAD,
+  GHASH_R_BE,
+  GHASH_R_LE,
+  HMAC_IPAD_HEAD,
+  HMAC_OPAD_HEAD,
   MD5_T_HEAD,
+  OPENSSL_TE0_HEAD,
   SHA1_K,
   SHA256_K_HEAD,
   bytesContain,
@@ -161,6 +169,59 @@ export function classify(
       });
       h.notes.push("DES (56-bit) is obsolete.");
     }
+
+    if (bytesContain(g.bytes, OPENSSL_TE0_HEAD)) {
+      const h = take("AES");
+      h.score += 0.5;
+      h.evidence.push({
+        kind: "constant-table",
+        summary: `OpenSSL Te0[] AES T-table head in @${g.name}`,
+        line: g.line,
+        snippet: g.rawSnippet.slice(0, 160),
+      });
+      h.notes.push("OpenSSL-style T-tables indicate table-driven AES (not constant-time).");
+    }
+
+    const hasIpad = bytesContain(g.bytes, HMAC_IPAD_HEAD);
+    const hasOpad = bytesContain(g.bytes, HMAC_OPAD_HEAD);
+    if (hasIpad || hasOpad) {
+      const h = take("HMAC-SHA256");
+      h.score += hasIpad && hasOpad ? 0.75 : 0.55;
+      h.evidence.push({
+        kind: "constant-table",
+        summary: `HMAC ${hasIpad ? "ipad 0x36" : ""}${hasIpad && hasOpad ? " + " : ""}${hasOpad ? "opad 0x5c" : ""} block in @${g.name}`,
+        line: g.line,
+      });
+      h.notes.push("HMAC-SHA256 keyed MAC (FIPS 198-1); verify key length and rotation.");
+      for (const f of functionsUsing(functions, g.name)) h.functions.add(f.name);
+    }
+
+    if (bytesContain(g.bytes, GHASH_R_BE) || bytesContain(g.bytes, GHASH_R_LE)) {
+      const h = take("AES-GCM");
+      h.score += 0.65;
+      h.evidence.push({
+        kind: "constant-table",
+        summary: `GHASH reduction R = 0xe1<<120 in @${g.name}`,
+        line: g.line,
+      });
+      h.notes.push("AES-GCM authenticated encryption (NIST SP 800-38D); nonce reuse is catastrophic.");
+      for (const f of functionsUsing(functions, g.name)) h.functions.add(f.name);
+    }
+
+    if (
+      bytesContain(g.bytes, CURVE25519_BASE) &&
+      (bytesContain(g.bytes, CURVE25519_CLAMP) || wordsContain(g.words32, CURVE25519_P_HEAD))
+    ) {
+      const h = take("Curve25519");
+      h.score += 0.6;
+      h.evidence.push({
+        kind: "constant-table",
+        summary: `Curve25519 base point / field constants in @${g.name}`,
+        line: g.line,
+      });
+      h.notes.push("RFC 7748 X25519 ECDH; verify clamping on scalar multiply.");
+      for (const f of functionsUsing(functions, g.name)) h.functions.add(f.name);
+    }
   }
 
   for (const f of functions) {
@@ -226,6 +287,39 @@ export function classify(
           line: f.startLine,
         });
       }
+    }
+
+    if (nameHint(f, /hmac/i)) {
+      const h = take("HMAC-SHA256");
+      h.functions.add(f.name);
+      h.score += 0.35;
+      h.evidence.push({
+        kind: "name",
+        summary: `Function name ${f.name} matches HMAC`,
+        line: f.startLine,
+      });
+    }
+
+    if (nameHint(f, /gcm|ghash|poly1305/i)) {
+      const h = take("AES-GCM");
+      h.functions.add(f.name);
+      h.score += 0.3;
+      h.evidence.push({
+        kind: "name",
+        summary: `Function name ${f.name} matches AES-GCM / GHASH`,
+        line: f.startLine,
+      });
+    }
+
+    if (nameHint(f, /curve25519|x25519|ed25519/i)) {
+      const h = take("Curve25519");
+      h.functions.add(f.name);
+      h.score += 0.35;
+      h.evidence.push({
+        kind: "name",
+        summary: `Function name ${f.name} matches Curve25519 / X25519`,
+        line: f.startLine,
+      });
     }
 
     if (nameHint(f, /md5/i)) {
@@ -295,14 +389,20 @@ export function titleFor(p: PrimitiveId): string {
   switch (p) {
     case "AES":
       return "AES (Rijndael) substitution / mix-columns";
+    case "AES-GCM":
+      return "AES-GCM authenticated encryption (GHASH)";
     case "SHA-256":
       return "SHA-256 compression function";
     case "SHA-1":
       return "SHA-1 compression function";
     case "MD5":
       return "MD5 compression function";
+    case "HMAC-SHA256":
+      return "HMAC-SHA256 message authentication";
     case "ChaCha20":
       return "ChaCha20 / Salsa20 stream cipher";
+    case "Curve25519":
+      return "Curve25519 / X25519 ECDH";
     case "RSA-modexp":
       return "Integer modular exponentiation (RSA-like)";
     case "CRC32":
@@ -316,14 +416,20 @@ export function rationaleFor(p: PrimitiveId): string {
   switch (p) {
     case "AES":
       return "FIPS-197 S-box bytes and/or GF(2^8) xtime/mix-columns dataflow in LLVM IR.";
+    case "AES-GCM":
+      return "GHASH field-reduction constant R and/or GCM-named functions in LLVM IR.";
     case "SHA-256":
       return "FIPS-180 K[] round constants plus Ch/Maj/Σ rotate structure.";
     case "SHA-1":
       return "Classic SHA-1 round constants K_t present in the module.";
     case "MD5":
       return "RFC 1321 T[] sine table matched in a global constant.";
+    case "HMAC-SHA256":
+      return "HMAC ipad 0x36 / opad 0x5c padding blocks in a global constant.";
     case "ChaCha20":
       return "ASCII sigma constants decode to \"expand 32-byte k\" with ARX rounds.";
+    case "Curve25519":
+      return "RFC 7748 base point 9, clamp mask, or field prime constants.";
     case "RSA-modexp":
       return "Square-and-multiply loop with multiply + remainder; typical of RSA/DH exp.";
     case "CRC32":

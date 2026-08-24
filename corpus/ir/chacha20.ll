@@ -3,7 +3,7 @@ source_filename = "/workspace/corpus/src/chacha20.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
-@sigma = internal constant [4 x i32] [i32 1634760805, i32 857760878, i32 2036477234, i32 1797285236], align 16
+@chacha20_sigma = dso_local constant [4 x i32] [i32 1634760805, i32 857760878, i32 2036477234, i32 1797285236], align 16
 
 ; Function Attrs: noinline nounwind optnone uwtable
 define dso_local void @chacha20_block(ptr noundef %out, ptr noundef %key, i32 noundef %counter, ptr noundef %nonce) #0 {
@@ -15,189 +15,182 @@ entry:
   %x = alloca [16 x i32], align 16
   %i = alloca i32, align 4
   %y = alloca [16 x i32], align 16
-  %i14 = alloca i32, align 4
+  %i10 = alloca i32, align 4
   %r = alloca i32, align 4
-  %i63 = alloca i32, align 4
+  %i59 = alloca i32, align 4
   store ptr %out, ptr %out.addr, align 8
   store ptr %key, ptr %key.addr, align 8
   store i32 %counter, ptr %counter.addr, align 4
   store ptr %nonce, ptr %nonce.addr, align 8
-  %0 = load i32, ptr @sigma, align 16
-  %arrayidx = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 0
-  store i32 %0, ptr %arrayidx, align 16
-  %1 = load i32, ptr getelementptr inbounds ([4 x i32], ptr @sigma, i64 0, i64 1), align 4
-  %arrayidx1 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 1
-  store i32 %1, ptr %arrayidx1, align 4
-  %2 = load i32, ptr getelementptr inbounds ([4 x i32], ptr @sigma, i64 0, i64 2), align 8
-  %arrayidx2 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 2
-  store i32 %2, ptr %arrayidx2, align 8
-  %3 = load i32, ptr getelementptr inbounds ([4 x i32], ptr @sigma, i64 0, i64 3), align 4
-  %arrayidx3 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 3
-  store i32 %3, ptr %arrayidx3, align 4
+  %arraydecay = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 0
+  call void @llvm.memcpy.p0.p0.i64(ptr align 16 %arraydecay, ptr align 16 @chacha20_sigma, i64 16, i1 false)
   store i32 0, ptr %i, align 4
   br label %for.cond
 
 for.cond:                                         ; preds = %for.inc, %entry
-  %4 = load i32, ptr %i, align 4
-  %cmp = icmp slt i32 %4, 8
+  %0 = load i32, ptr %i, align 4
+  %cmp = icmp slt i32 %0, 8
   br i1 %cmp, label %for.body, label %for.end
 
 for.body:                                         ; preds = %for.cond
-  %5 = load ptr, ptr %key.addr, align 8
-  %6 = load i32, ptr %i, align 4
-  %idxprom = sext i32 %6 to i64
-  %arrayidx4 = getelementptr inbounds i32, ptr %5, i64 %idxprom
-  %7 = load i32, ptr %arrayidx4, align 4
-  %8 = load i32, ptr %i, align 4
-  %add = add nsw i32 4, %8
-  %idxprom5 = sext i32 %add to i64
-  %arrayidx6 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 %idxprom5
-  store i32 %7, ptr %arrayidx6, align 4
+  %1 = load ptr, ptr %key.addr, align 8
+  %2 = load i32, ptr %i, align 4
+  %idxprom = sext i32 %2 to i64
+  %arrayidx = getelementptr inbounds i32, ptr %1, i64 %idxprom
+  %3 = load i32, ptr %arrayidx, align 4
+  %4 = load i32, ptr %i, align 4
+  %add = add nsw i32 4, %4
+  %idxprom1 = sext i32 %add to i64
+  %arrayidx2 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 %idxprom1
+  store i32 %3, ptr %arrayidx2, align 4
   br label %for.inc
 
 for.inc:                                          ; preds = %for.body
-  %9 = load i32, ptr %i, align 4
-  %inc = add nsw i32 %9, 1
+  %5 = load i32, ptr %i, align 4
+  %inc = add nsw i32 %5, 1
   store i32 %inc, ptr %i, align 4
   br label %for.cond, !llvm.loop !6
 
 for.end:                                          ; preds = %for.cond
-  %10 = load i32, ptr %counter.addr, align 4
-  %arrayidx7 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 12
-  store i32 %10, ptr %arrayidx7, align 16
+  %6 = load i32, ptr %counter.addr, align 4
+  %arrayidx3 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 12
+  store i32 %6, ptr %arrayidx3, align 16
+  %7 = load ptr, ptr %nonce.addr, align 8
+  %arrayidx4 = getelementptr inbounds i32, ptr %7, i64 0
+  %8 = load i32, ptr %arrayidx4, align 4
+  %arrayidx5 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 13
+  store i32 %8, ptr %arrayidx5, align 4
+  %9 = load ptr, ptr %nonce.addr, align 8
+  %arrayidx6 = getelementptr inbounds i32, ptr %9, i64 1
+  %10 = load i32, ptr %arrayidx6, align 4
+  %arrayidx7 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 14
+  store i32 %10, ptr %arrayidx7, align 8
   %11 = load ptr, ptr %nonce.addr, align 8
-  %arrayidx8 = getelementptr inbounds i32, ptr %11, i64 0
+  %arrayidx8 = getelementptr inbounds i32, ptr %11, i64 2
   %12 = load i32, ptr %arrayidx8, align 4
-  %arrayidx9 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 13
+  %arrayidx9 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 15
   store i32 %12, ptr %arrayidx9, align 4
-  %13 = load ptr, ptr %nonce.addr, align 8
-  %arrayidx10 = getelementptr inbounds i32, ptr %13, i64 1
-  %14 = load i32, ptr %arrayidx10, align 4
-  %arrayidx11 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 14
-  store i32 %14, ptr %arrayidx11, align 8
-  %15 = load ptr, ptr %nonce.addr, align 8
-  %arrayidx12 = getelementptr inbounds i32, ptr %15, i64 2
-  %16 = load i32, ptr %arrayidx12, align 4
-  %arrayidx13 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 15
-  store i32 %16, ptr %arrayidx13, align 4
-  store i32 0, ptr %i14, align 4
-  br label %for.cond15
+  store i32 0, ptr %i10, align 4
+  br label %for.cond11
 
-for.cond15:                                       ; preds = %for.inc22, %for.end
-  %17 = load i32, ptr %i14, align 4
-  %cmp16 = icmp slt i32 %17, 16
-  br i1 %cmp16, label %for.body17, label %for.end24
+for.cond11:                                       ; preds = %for.inc18, %for.end
+  %13 = load i32, ptr %i10, align 4
+  %cmp12 = icmp slt i32 %13, 16
+  br i1 %cmp12, label %for.body13, label %for.end20
 
-for.body17:                                       ; preds = %for.cond15
-  %18 = load i32, ptr %i14, align 4
-  %idxprom18 = sext i32 %18 to i64
-  %arrayidx19 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 %idxprom18
-  %19 = load i32, ptr %arrayidx19, align 4
-  %20 = load i32, ptr %i14, align 4
-  %idxprom20 = sext i32 %20 to i64
-  %arrayidx21 = getelementptr inbounds [16 x i32], ptr %y, i64 0, i64 %idxprom20
-  store i32 %19, ptr %arrayidx21, align 4
-  br label %for.inc22
+for.body13:                                       ; preds = %for.cond11
+  %14 = load i32, ptr %i10, align 4
+  %idxprom14 = sext i32 %14 to i64
+  %arrayidx15 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 %idxprom14
+  %15 = load i32, ptr %arrayidx15, align 4
+  %16 = load i32, ptr %i10, align 4
+  %idxprom16 = sext i32 %16 to i64
+  %arrayidx17 = getelementptr inbounds [16 x i32], ptr %y, i64 0, i64 %idxprom16
+  store i32 %15, ptr %arrayidx17, align 4
+  br label %for.inc18
 
-for.inc22:                                        ; preds = %for.body17
-  %21 = load i32, ptr %i14, align 4
-  %inc23 = add nsw i32 %21, 1
-  store i32 %inc23, ptr %i14, align 4
-  br label %for.cond15, !llvm.loop !8
+for.inc18:                                        ; preds = %for.body13
+  %17 = load i32, ptr %i10, align 4
+  %inc19 = add nsw i32 %17, 1
+  store i32 %inc19, ptr %i10, align 4
+  br label %for.cond11, !llvm.loop !8
 
-for.end24:                                        ; preds = %for.cond15
+for.end20:                                        ; preds = %for.cond11
   store i32 0, ptr %r, align 4
-  br label %for.cond25
+  br label %for.cond21
 
-for.cond25:                                       ; preds = %for.inc60, %for.end24
-  %22 = load i32, ptr %r, align 4
-  %cmp26 = icmp slt i32 %22, 10
-  br i1 %cmp26, label %for.body27, label %for.end62
+for.cond21:                                       ; preds = %for.inc56, %for.end20
+  %18 = load i32, ptr %r, align 4
+  %cmp22 = icmp slt i32 %18, 10
+  br i1 %cmp22, label %for.body23, label %for.end58
 
-for.body27:                                       ; preds = %for.cond25
-  %arrayidx28 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 0
-  %arrayidx29 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 4
-  %arrayidx30 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 8
-  %arrayidx31 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 12
+for.body23:                                       ; preds = %for.cond21
+  %arrayidx24 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 0
+  %arrayidx25 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 4
+  %arrayidx26 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 8
+  %arrayidx27 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 12
+  call void @quarter_round(ptr noundef %arrayidx24, ptr noundef %arrayidx25, ptr noundef %arrayidx26, ptr noundef %arrayidx27)
+  %arrayidx28 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 1
+  %arrayidx29 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 5
+  %arrayidx30 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 9
+  %arrayidx31 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 13
   call void @quarter_round(ptr noundef %arrayidx28, ptr noundef %arrayidx29, ptr noundef %arrayidx30, ptr noundef %arrayidx31)
-  %arrayidx32 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 1
-  %arrayidx33 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 5
-  %arrayidx34 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 9
-  %arrayidx35 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 13
+  %arrayidx32 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 2
+  %arrayidx33 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 6
+  %arrayidx34 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 10
+  %arrayidx35 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 14
   call void @quarter_round(ptr noundef %arrayidx32, ptr noundef %arrayidx33, ptr noundef %arrayidx34, ptr noundef %arrayidx35)
-  %arrayidx36 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 2
-  %arrayidx37 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 6
-  %arrayidx38 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 10
-  %arrayidx39 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 14
+  %arrayidx36 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 3
+  %arrayidx37 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 7
+  %arrayidx38 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 11
+  %arrayidx39 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 15
   call void @quarter_round(ptr noundef %arrayidx36, ptr noundef %arrayidx37, ptr noundef %arrayidx38, ptr noundef %arrayidx39)
-  %arrayidx40 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 3
-  %arrayidx41 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 7
-  %arrayidx42 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 11
+  %arrayidx40 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 0
+  %arrayidx41 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 5
+  %arrayidx42 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 10
   %arrayidx43 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 15
   call void @quarter_round(ptr noundef %arrayidx40, ptr noundef %arrayidx41, ptr noundef %arrayidx42, ptr noundef %arrayidx43)
-  %arrayidx44 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 0
-  %arrayidx45 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 5
-  %arrayidx46 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 10
-  %arrayidx47 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 15
+  %arrayidx44 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 1
+  %arrayidx45 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 6
+  %arrayidx46 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 11
+  %arrayidx47 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 12
   call void @quarter_round(ptr noundef %arrayidx44, ptr noundef %arrayidx45, ptr noundef %arrayidx46, ptr noundef %arrayidx47)
-  %arrayidx48 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 1
-  %arrayidx49 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 6
-  %arrayidx50 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 11
-  %arrayidx51 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 12
+  %arrayidx48 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 2
+  %arrayidx49 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 7
+  %arrayidx50 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 8
+  %arrayidx51 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 13
   call void @quarter_round(ptr noundef %arrayidx48, ptr noundef %arrayidx49, ptr noundef %arrayidx50, ptr noundef %arrayidx51)
-  %arrayidx52 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 2
-  %arrayidx53 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 7
-  %arrayidx54 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 8
-  %arrayidx55 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 13
+  %arrayidx52 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 3
+  %arrayidx53 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 4
+  %arrayidx54 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 9
+  %arrayidx55 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 14
   call void @quarter_round(ptr noundef %arrayidx52, ptr noundef %arrayidx53, ptr noundef %arrayidx54, ptr noundef %arrayidx55)
-  %arrayidx56 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 3
-  %arrayidx57 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 4
-  %arrayidx58 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 9
-  %arrayidx59 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 14
-  call void @quarter_round(ptr noundef %arrayidx56, ptr noundef %arrayidx57, ptr noundef %arrayidx58, ptr noundef %arrayidx59)
-  br label %for.inc60
+  br label %for.inc56
 
-for.inc60:                                        ; preds = %for.body27
-  %23 = load i32, ptr %r, align 4
-  %inc61 = add nsw i32 %23, 1
-  store i32 %inc61, ptr %r, align 4
-  br label %for.cond25, !llvm.loop !9
+for.inc56:                                        ; preds = %for.body23
+  %19 = load i32, ptr %r, align 4
+  %inc57 = add nsw i32 %19, 1
+  store i32 %inc57, ptr %r, align 4
+  br label %for.cond21, !llvm.loop !9
 
-for.end62:                                        ; preds = %for.cond25
-  store i32 0, ptr %i63, align 4
-  br label %for.cond64
+for.end58:                                        ; preds = %for.cond21
+  store i32 0, ptr %i59, align 4
+  br label %for.cond60
 
-for.cond64:                                       ; preds = %for.inc74, %for.end62
-  %24 = load i32, ptr %i63, align 4
-  %cmp65 = icmp slt i32 %24, 16
-  br i1 %cmp65, label %for.body66, label %for.end76
+for.cond60:                                       ; preds = %for.inc70, %for.end58
+  %20 = load i32, ptr %i59, align 4
+  %cmp61 = icmp slt i32 %20, 16
+  br i1 %cmp61, label %for.body62, label %for.end72
 
-for.body66:                                       ; preds = %for.cond64
-  %25 = load i32, ptr %i63, align 4
-  %idxprom67 = sext i32 %25 to i64
-  %arrayidx68 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 %idxprom67
-  %26 = load i32, ptr %arrayidx68, align 4
-  %27 = load i32, ptr %i63, align 4
-  %idxprom69 = sext i32 %27 to i64
-  %arrayidx70 = getelementptr inbounds [16 x i32], ptr %y, i64 0, i64 %idxprom69
-  %28 = load i32, ptr %arrayidx70, align 4
-  %add71 = add i32 %26, %28
-  %29 = load ptr, ptr %out.addr, align 8
-  %30 = load i32, ptr %i63, align 4
-  %idxprom72 = sext i32 %30 to i64
-  %arrayidx73 = getelementptr inbounds i32, ptr %29, i64 %idxprom72
-  store i32 %add71, ptr %arrayidx73, align 4
-  br label %for.inc74
+for.body62:                                       ; preds = %for.cond60
+  %21 = load i32, ptr %i59, align 4
+  %idxprom63 = sext i32 %21 to i64
+  %arrayidx64 = getelementptr inbounds [16 x i32], ptr %x, i64 0, i64 %idxprom63
+  %22 = load i32, ptr %arrayidx64, align 4
+  %23 = load i32, ptr %i59, align 4
+  %idxprom65 = sext i32 %23 to i64
+  %arrayidx66 = getelementptr inbounds [16 x i32], ptr %y, i64 0, i64 %idxprom65
+  %24 = load i32, ptr %arrayidx66, align 4
+  %add67 = add i32 %22, %24
+  %25 = load ptr, ptr %out.addr, align 8
+  %26 = load i32, ptr %i59, align 4
+  %idxprom68 = sext i32 %26 to i64
+  %arrayidx69 = getelementptr inbounds i32, ptr %25, i64 %idxprom68
+  store i32 %add67, ptr %arrayidx69, align 4
+  br label %for.inc70
 
-for.inc74:                                        ; preds = %for.body66
-  %31 = load i32, ptr %i63, align 4
-  %inc75 = add nsw i32 %31, 1
-  store i32 %inc75, ptr %i63, align 4
-  br label %for.cond64, !llvm.loop !10
+for.inc70:                                        ; preds = %for.body62
+  %27 = load i32, ptr %i59, align 4
+  %inc71 = add nsw i32 %27, 1
+  store i32 %inc71, ptr %i59, align 4
+  br label %for.cond60, !llvm.loop !10
 
-for.end76:                                        ; preds = %for.cond64
+for.end72:                                        ; preds = %for.cond60
   ret void
 }
+
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: readwrite)
+declare void @llvm.memcpy.p0.p0.i64(ptr noalias nocapture writeonly, ptr noalias nocapture readonly, i64, i1 immarg) #1
 
 ; Function Attrs: noinline nounwind optnone uwtable
 define internal void @quarter_round(ptr noundef %a, ptr noundef %b, ptr noundef %c, ptr noundef %d) #0 {
@@ -300,6 +293,7 @@ entry:
 }
 
 attributes #0 = { noinline nounwind optnone uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }
 
 !llvm.module.flags = !{!0, !1, !2, !3, !4}
 !llvm.ident = !{!5}

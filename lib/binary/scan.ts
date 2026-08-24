@@ -4,10 +4,17 @@ import {
   AES_SBOX,
   CHACHA_SIGMA,
   CRC32_POLY,
-  indexOfBytes,
+  CURVE25519_BASE,
+  CURVE25519_CLAMP,
+  GHASH_R_BE,
+  GHASH_R_LE,
+  HMAC_IPAD_HEAD,
+  HMAC_OPAD_HEAD,
   MD5_T,
+  OPENSSL_TE0_HEAD,
   SHA1_K,
   SHA256_K,
+  indexOfBytes,
   wordsToBytesBE,
   wordsToBytesLE,
 } from "../ir/signatures";
@@ -61,15 +68,55 @@ function patterns(): Pattern[] {
       label: "CRC-32 polynomial 0xEDB88320",
       bytes: wordsToBytesLE(CRC32_POLY),
     },
+    {
+      primitive: "AES",
+      label: "OpenSSL Te0 AES T-table head",
+      bytes: OPENSSL_TE0_HEAD,
+    },
+    {
+      primitive: "HMAC-SHA256",
+      label: "HMAC ipad 0x36 (16 bytes)",
+      bytes: HMAC_IPAD_HEAD,
+    },
+    {
+      primitive: "HMAC-SHA256",
+      label: "HMAC opad 0x5c (16 bytes)",
+      bytes: HMAC_OPAD_HEAD,
+    },
+    {
+      primitive: "AES-GCM",
+      label: "GHASH R = 0xe1<<120 (BE)",
+      bytes: GHASH_R_BE,
+    },
+    {
+      primitive: "AES-GCM",
+      label: "GHASH R = 0xe1<<120 (LE)",
+      bytes: GHASH_R_LE,
+    },
+    {
+      primitive: "Curve25519",
+      label: "Curve25519 base point 9",
+      bytes: CURVE25519_BASE,
+    },
+    {
+      primitive: "Curve25519",
+      label: "Curve25519 clamp 0xf8",
+      bytes: CURVE25519_CLAMP,
+    },
   ];
 }
 
 export function scanBinaryConstants(buf: Uint8Array): Finding[] {
   const grouped = new Map<PrimitiveId, Finding>();
   let n = 0;
+  const hmacHits = { ipad: false, opad: false };
   for (const p of patterns()) {
     const off = indexOfBytes(buf, p.bytes);
     if (off < 0) continue;
+    if (p.primitive === "HMAC-SHA256") {
+      if (p.label.includes("ipad")) hmacHits.ipad = true;
+      if (p.label.includes("opad")) hmacHits.opad = true;
+    }
     const existing = grouped.get(p.primitive);
     const ev = {
       kind: "raw-bytes" as const,
@@ -95,6 +142,13 @@ export function scanBinaryConstants(buf: Uint8Array): Finding[] {
       notes: [rationaleFor(p.primitive)],
       source: "binary",
     });
+  }
+  if (hmacHits.ipad && hmacHits.opad) {
+    const h = grouped.get("HMAC-SHA256");
+    if (h) {
+      h.confidence = Math.min(0.99, h.confidence + 0.06);
+      h.notes.push("Both HMAC ipad and opad blocks present — strong HMAC-SHA256 indicator.");
+    }
   }
   return [...grouped.values()].sort((a, b) => b.confidence - a.confidence);
 }

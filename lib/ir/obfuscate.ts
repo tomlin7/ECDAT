@@ -15,7 +15,15 @@ export function obfuscateIr(ir: string, seed: number): string {
 
   out = out.replace(/(entry:)/g, (_m, label: string) => {
     const id = Math.floor(rand() * 1e6);
-    return `${label}\n  %obf.${id} = xor i32 0, 0\n  %obf.and.${id} = and i32 %obf.${id}, -1`;
+    const dead = Math.floor(rand() * 1e6);
+    return `${label}
+  %obf.${id} = xor i32 0, 0
+  %obf.and.${id} = and i32 %obf.${id}, -1
+  br i1 false, label %obf.dead.${dead}, label %obf.live.${id}
+obf.dead.${dead}:
+  %obf.junk.${dead} = xor i32 ${seed}, ${id}
+  br label %obf.live.${id}
+obf.live.${id}:`;
   });
 
   const fns = extractFunctions(out);
@@ -27,6 +35,14 @@ export function obfuscateIr(ir: string, seed: number): string {
   for (const [from, to] of map) {
     out = out.replace(new RegExp(`@${escapeReg(from)}\\b`, "g"), `@${to}`);
   }
+
+  out = out.replace(
+    /@([a-zA-Z_.][\w.]*)\s*=\s*(?:internal\s+|private\s+|constant\s+)?\[/g,
+    (_m, gname: string) => {
+      if (gname.startsWith("llvm.") || rand() > 0.35) return _m;
+      return `@g_${seed}_${gname} = constant [`;
+    },
+  );
 
   out = `; ECDAT training mutation seed=${seed}\n` + out;
   return out;
