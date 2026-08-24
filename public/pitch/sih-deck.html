@@ -58,9 +58,9 @@
   <section class="slide">
     <h2>Catalog (today)</h2>
     <ul>
-      <li>AES, AES-GCM (GHASH), SHA-256/1, MD5, HMAC-SHA256, ChaCha20, Curve25519, RSA-modexp, CRC-32</li>
-      <li>Weak/deprecated flagged: MD5, SHA-1, CRC-32, DES</li>
-      <li>Corpus + <code>npm run verify</code> green on IR and stripped objects</li>
+      <li>AES, AES-GCM, SHA-256/1, MD5, HMAC-SHA256, ChaCha20, Curve25519, RSA-modexp/key, TLS, DRBG</li>
+      <li>ELF · PE · stripped .o/.so — byte scan without symbols</li>
+      <li>Weak/deprecated flagged · <code>verify:all</code> + vendor holdout green</li>
     </ul>
   </section>
 
@@ -70,8 +70,9 @@
       <li>Load <strong>Enterprise mix (IR)</strong> → AES + SHA-256 + ChaCha + MD5 + RSA-modexp</li>
       <li>Click weak MD5 finding → constant-table evidence</li>
       <li>Load <strong>Stripped vendor AES (.o)</strong> → S-box at file offset, no symbols</li>
+      <li>Load <strong>PE firmware blob</strong> → AES + TLS on Windows-style image</li>
       <li>Load <strong>Stripped enterprise mix (.o)</strong> → multi-primitive byte scan</li>
-      <li>Inventory tab → Export JSON / HTML report</li>
+      <li>Inventory → tag asset / business unit → Export JSON</li>
     </ol>
     <div class="demo">http://127.0.0.1:43147 · npm run dev</div>
   </section>

@@ -24,10 +24,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import type { AnalysisReport, Finding, FunctionRecord } from "@/lib/ir/types";
+import type { AnalysisReport, EnterpriseInventory, Finding, FunctionRecord } from "@/lib/ir/types";
 import { inventoryToHtml, inventoryToJson } from "@/lib/report";
 import type { SampleMeta } from "@/lib/samples/catalog";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 export function Workbench() {
   const [samples, setSamples] = useState<SampleMeta[]>([]);
@@ -39,6 +40,9 @@ export function Workbench() {
   const [dragOver, setDragOver] = useState(false);
   const [selectedFn, setSelectedFn] = useState<string | null>(null);
   const [selectedFinding, setSelectedFinding] = useState<string | null>(null);
+  const [assetId, setAssetId] = useState("");
+  const [businessUnit, setBusinessUnit] = useState("unspecified");
+  const [orgSite, setOrgSite] = useState("");
 
   useEffect(() => {
     fetch("/api/samples")
@@ -55,6 +59,7 @@ export function Workbench() {
       return;
     }
     setReport(data as AnalysisReport);
+    setAssetId(data.filename ?? "unknown-asset");
     setSelectedFinding(data.findings[0]?.id ?? null);
     setSelectedFn(
       data.findings[0]?.functions[0] ?? data.functions[0]?.name ?? null,
@@ -156,6 +161,18 @@ export function Workbench() {
     return report.functions.find((f) => f.name === name) ?? null;
   }, [report, selectedFn, activeFinding]);
 
+  const patchedInventory: EnterpriseInventory | null = useMemo(() => {
+    if (!report?.inventory) return null;
+    return {
+      ...report.inventory,
+      assetId: assetId || report.inventory.assetId,
+      businessUnit: businessUnit || report.inventory.businessUnit,
+      summary: orgSite
+        ? `${report.summary} · site ${orgSite}`
+        : report.summary,
+    };
+  }, [report, assetId, businessUnit, orgSite]);
+
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <header className="border-b border-border/80 bg-card/40">
@@ -177,13 +194,24 @@ export function Workbench() {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="font-mono">
               LLVM IR frontend
             </Badge>
             <Badge variant="outline" className="font-mono">
               no execution
             </Badge>
+            <a
+              href="/pitch/sih-deck.html"
+              target="_blank"
+              rel="noreferrer"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "inline-flex",
+              )}
+            >
+              Pitch deck
+            </a>
           </div>
         </div>
       </header>
@@ -287,6 +315,13 @@ export function Workbench() {
             loading={loading}
             error={error}
             report={report}
+            inventory={patchedInventory}
+            assetId={assetId}
+            businessUnit={businessUnit}
+            orgSite={orgSite}
+            onAssetId={setAssetId}
+            onBusinessUnit={setBusinessUnit}
+            onOrgSite={setOrgSite}
             selectedFinding={selectedFinding}
             activeFinding={activeFinding}
             activeFn={activeFn}
@@ -313,6 +348,13 @@ function ResultsPane({
   loading,
   error,
   report,
+  inventory,
+  assetId,
+  businessUnit,
+  orgSite,
+  onAssetId,
+  onBusinessUnit,
+  onOrgSite,
   selectedFinding,
   activeFinding,
   activeFn,
@@ -322,6 +364,13 @@ function ResultsPane({
   loading: boolean;
   error: string | null;
   report: AnalysisReport | null;
+  inventory: EnterpriseInventory | null;
+  assetId: string;
+  businessUnit: string;
+  orgSite: string;
+  onAssetId: (v: string) => void;
+  onBusinessUnit: (v: string) => void;
+  onOrgSite: (v: string) => void;
   selectedFinding: string | null;
   activeFinding: Finding | null;
   activeFn: FunctionRecord | null;
@@ -499,14 +548,41 @@ function ResultsPane({
             )}
           </TabsContent>
           <TabsContent value="inventory" className="mt-3 space-y-3">
-            {report.inventory ? (
+            {inventory ? (
               <>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <label className="space-y-1 text-xs">
+                    <span className="text-muted-foreground">Asset ID</span>
+                    <input
+                      className="w-full rounded-md border border-border bg-background px-2 py-1.5 font-mono text-xs"
+                      value={assetId}
+                      onChange={(e) => onAssetId(e.target.value)}
+                    />
+                  </label>
+                  <label className="space-y-1 text-xs">
+                    <span className="text-muted-foreground">Business unit</span>
+                    <input
+                      className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                      value={businessUnit}
+                      onChange={(e) => onBusinessUnit(e.target.value)}
+                    />
+                  </label>
+                  <label className="space-y-1 text-xs">
+                    <span className="text-muted-foreground">Org site (optional)</span>
+                    <input
+                      className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                      value={orgSite}
+                      onChange={(e) => onOrgSite(e.target.value)}
+                      placeholder="e.g. dc-east / firmware/build-42"
+                    />
+                  </label>
+                </div>
                 <div className="grid grid-cols-3 gap-2">
-                  <Stat label="Asset" value={report.inventory.assetId.slice(0, 18)} />
-                  <Stat label="OK" value={String(report.inventory.counts.ok)} />
+                  <Stat label="Asset" value={inventory.assetId.slice(0, 18)} />
+                  <Stat label="OK" value={String(inventory.counts.ok)} />
                   <Stat
                     label="Review"
-                    value={String(report.inventory.counts.review)}
+                    value={String(inventory.counts.review)}
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -515,13 +591,13 @@ function ResultsPane({
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      const blob = new Blob([inventoryToJson(report.inventory)], {
+                      const blob = new Blob([inventoryToJson(inventory)], {
                         type: "application/json",
                       });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement("a");
                       a.href = url;
-                      a.download = `${report.filename.replace(/[^a-z0-9._-]+/gi, "_")}-inventory.json`;
+                      a.download = `${inventory.assetId.replace(/[^a-z0-9._-]+/gi, "_")}-inventory.json`;
                       a.click();
                       URL.revokeObjectURL(url);
                     }}
@@ -533,13 +609,13 @@ function ResultsPane({
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      const blob = new Blob([inventoryToHtml(report.inventory)], {
+                      const blob = new Blob([inventoryToHtml(inventory)], {
                         type: "text/html",
                       });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement("a");
                       a.href = url;
-                      a.download = `${report.filename.replace(/[^a-z0-9._-]+/gi, "_")}-inventory.html`;
+                      a.download = `${inventory.assetId.replace(/[^a-z0-9._-]+/gi, "_")}-inventory.html`;
                       a.click();
                       URL.revokeObjectURL(url);
                     }}
@@ -559,7 +635,7 @@ function ResultsPane({
                       </tr>
                     </thead>
                     <tbody>
-                      {report.inventory.rows.map((row) => (
+                      {inventory.rows.map((row) => (
                         <tr key={row.id} className="border-t border-border/60">
                           <td className="px-2 py-1.5 font-mono">{row.id}</td>
                           <td className="px-2 py-1.5">{row.primitive}</td>
@@ -575,9 +651,9 @@ function ResultsPane({
                     </tbody>
                   </table>
                 </ScrollArea>
-                {report.inventory.rows[0] ? (
+                {inventory.rows[0] ? (
                   <p className="text-sm text-muted-foreground">
-                    {report.inventory.rows[0].recommendation}
+                    {inventory.rows[0].recommendation}
                   </p>
                 ) : null}
               </>

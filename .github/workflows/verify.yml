@@ -1,0 +1,24 @@
+name: verify
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Install clang
+        run: sudo apt-get update && sudo apt-get install -y clang
+      - run: npm ci
+      - run: bash scripts/emit-corpus.sh
+      - run: npm run train
+      - run: npm run verify:all
+      - run: npm run build
