@@ -29,6 +29,9 @@ const RECOMMENDATIONS: Partial<Record<PrimitiveId, string>> = {
   ChaCha20: "Modern stream cipher; ensure Poly1305 for authentication.",
   Curve25519: "Prefer for ECDH; verify constant-time scalar multiply.",
   "RSA-modexp": "Audit key length (≥2048 bits); use OAEP/PSS padding.",
+  "RSA-key": "Inventory modulus size; disable PKCS#1 v1.5 padding where possible.",
+  "TLS-stack": "Review cipher suite order; disable TLS 1.0/1.1 and weak ciphers.",
+  DRBG: "Verify entropy source and reseed interval for NIST SP 800-90A compliance.",
   CRC32: "Not a MAC — do not use for integrity against adversaries.",
   DES: "Remove; use AES-256.",
 };

@@ -132,6 +132,46 @@ export const SAMPLE_CATALOG: SampleMeta[] = [
     expected: ["AES", "SHA-256", "ChaCha20", "MD5"],
     format: "elf",
   },
+  {
+    id: "tls_ciphers",
+    filename: "tls_ciphers.ll",
+    title: "TLS cipher suites IR",
+    blurb: "IANA TLS 1.2/1.3 cipher suite identifier table.",
+    expected: ["TLS-stack"],
+    format: "ir",
+  },
+  {
+    id: "rsa_pkcs1",
+    filename: "rsa_pkcs1.ll",
+    title: "RSA PKCS#1 key IR",
+    blurb: "rsaEncryption OID + exponent 65537 + modulus placeholder.",
+    expected: ["RSA-key"],
+    format: "ir",
+  },
+  {
+    id: "nist_drbg",
+    filename: "nist_drbg.ll",
+    title: "NIST DRBG IR",
+    blurb: "Hash_DRBG label + CAVP V vector head.",
+    expected: ["DRBG"],
+    format: "ir",
+  },
+  {
+    id: "crypto_firmware_pe",
+    filename: "crypto_firmware.pe.bin",
+    title: "PE firmware blob",
+    blurb: "Minimal MZ/PE image with AES S-box + TLS ciphers in rodata.",
+    expected: ["AES", "TLS-stack"],
+    format: "elf",
+  },
+  {
+    id: "vendor_aes_so",
+    filename: "vendor_aes_stripped.so",
+    title: "Stripped vendor AES (.so)",
+    blurb: "Shared object, strip --strip-all — Linux firmware/vendor slice.",
+    expected: ["AES"],
+    format: "elf",
+  },
 ];
 
 export function corpusIrDir(): string {

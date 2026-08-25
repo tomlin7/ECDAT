@@ -13,9 +13,11 @@ compile_ll () {
   clang "${FLAGS[@]}" -O2 -o "$OUT/${name}.O2.ll" "$SRC/${name}.c"
   clang -c -O0 -fno-discard-value-names -o "$BIN/${name}.o" "$SRC/${name}.c"
 }
-for name in aes sha256 sha1 chacha20 md5 rsa_modexp crc32 benign hmac aes_gcm curve25519 vendor_openssl_aes; do
+for name in aes sha256 sha1 chacha20 md5 rsa_modexp crc32 benign hmac aes_gcm curve25519 vendor_openssl_aes tls_ciphers rsa_pkcs1 nist_drbg; do
   compile_ll "$name"
 done
+mkdir -p "$OUT/holdout"
+clang "${FLAGS[@]}" -O0 -o "$OUT/holdout/vendor_libsodium.ll" "$SRC/vendor_libsodium.c"
 clang "${FLAGS[@]}" -O0 -I "$SRC" -o "$OUT/enterprise_mix.ll" "$SRC/enterprise_mix.c"
 clang -c -O0 -I "$SRC" -o "$BIN/enterprise_mix.o" "$SRC/enterprise_mix.c"
 
@@ -25,4 +27,11 @@ strip --strip-all "$BIN/vendor_openssl_aes_stripped.o"
 clang -c -O2 -fno-ident -I "$SRC" -o "$BIN/enterprise_mix_stripped.o" "$SRC/enterprise_mix.c"
 strip --strip-all "$BIN/enterprise_mix_stripped.o"
 
-echo "wrote $OUT and $BIN (incl. stripped vendor objects)"
+# Stripped shared object (.so)
+clang -shared -fPIC -O2 -fno-ident -o "$BIN/vendor_aes_stripped.so" "$SRC/vendor_openssl_aes.c"
+strip --strip-all "$BIN/vendor_aes_stripped.so"
+
+# PE firmware-style blob with embedded crypto tables
+npx --yes tsx "$ROOT/scripts/gen-pe-sample.ts"
+
+echo "wrote $OUT and $BIN (incl. stripped vendor, .so, PE)"

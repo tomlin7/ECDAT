@@ -6,14 +6,22 @@ import {
   CRC32_POLY,
   CURVE25519_BASE,
   CURVE25519_CLAMP,
+  DRBG_HASH_LABEL,
+  DRBG_HMAC_LABEL,
   GHASH_R_BE,
   GHASH_R_LE,
+  HASH_DRBG_V0_HEAD,
   HMAC_IPAD_HEAD,
   HMAC_OPAD_HEAD,
   MD5_T,
   OPENSSL_TE0_HEAD,
+  RSA_PKCS1_OID,
+  RSA_PUBEXP_65537,
   SHA1_K,
   SHA256_K,
+  TLS_CIPHER_HEAD,
+  TLS_CIPHER_HEAD_LE,
+  TLS_RECORD_12,
   indexOfBytes,
   wordsToBytesBE,
   wordsToBytesLE,
@@ -103,6 +111,46 @@ function patterns(): Pattern[] {
       label: "Curve25519 clamp 0xf8",
       bytes: CURVE25519_CLAMP,
     },
+    {
+      primitive: "RSA-key",
+      label: "PKCS#1 rsaEncryption OID",
+      bytes: RSA_PKCS1_OID,
+    },
+    {
+      primitive: "RSA-key",
+      label: "RSA public exponent 65537 (DER)",
+      bytes: RSA_PUBEXP_65537,
+    },
+    {
+      primitive: "TLS-stack",
+      label: "TLS cipher suites (BE uint16)",
+      bytes: TLS_CIPHER_HEAD,
+    },
+    {
+      primitive: "TLS-stack",
+      label: "TLS cipher suites (LE uint16)",
+      bytes: TLS_CIPHER_HEAD_LE,
+    },
+    {
+      primitive: "TLS-stack",
+      label: "TLS 1.2 record version 0x0303",
+      bytes: TLS_RECORD_12,
+    },
+    {
+      primitive: "DRBG",
+      label: "Hash_DRBG label",
+      bytes: DRBG_HASH_LABEL,
+    },
+    {
+      primitive: "DRBG",
+      label: "HMAC_DRBG label",
+      bytes: DRBG_HMAC_LABEL,
+    },
+    {
+      primitive: "DRBG",
+      label: "Hash_DRBG KAT V head",
+      bytes: HASH_DRBG_V0_HEAD,
+    },
   ];
 }
 
@@ -150,6 +198,13 @@ export function scanBinaryConstants(buf: Uint8Array): Finding[] {
       h.notes.push("Both HMAC ipad and opad blocks present — strong HMAC-SHA256 indicator.");
     }
   }
+  const curveBase = grouped.get("Curve25519");
+  const hasClamp =
+    indexOfBytes(buf, CURVE25519_CLAMP) >= 0 ||
+    patterns().some(
+      (p) => p.primitive === "Curve25519" && p.label.includes("clamp") && indexOfBytes(buf, p.bytes) >= 0,
+    );
+  if (curveBase && !hasClamp) grouped.delete("Curve25519");
   return [...grouped.values()].sort((a, b) => b.confidence - a.confidence);
 }
 

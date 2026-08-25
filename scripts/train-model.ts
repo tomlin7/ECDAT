@@ -5,7 +5,7 @@ import { obfuscateIr } from "../lib/ir/obfuscate";
 import { FEATURE_NAMES, functionFeatures } from "../lib/ml/features";
 import { trainLogReg } from "../lib/ml/logreg";
 
-const LABELS = ["BENIGN", "AES", "AES-GCM", "SHA-256", "SHA-1", "MD5", "HMAC-SHA256", "ChaCha20", "Curve25519", "RSA-modexp"] as const;
+const LABELS = ["BENIGN", "AES", "AES-GCM", "SHA-256", "SHA-1", "MD5", "HMAC-SHA256", "ChaCha20", "Curve25519", "RSA-modexp", "RSA-key", "TLS-stack", "DRBG"] as const;
 
 function labelFunction(file: string, name: string): (typeof LABELS)[number] | null {
   const f = file.toLowerCase();
@@ -19,7 +19,9 @@ function labelFunction(file: string, name: string): (typeof LABELS)[number] | nu
   if (/sha1/.test(n)) return "SHA-1";
   if (/md5/.test(n)) return "MD5";
   if (/chacha|quarter/.test(n)) return "ChaCha20";
-  if (/modexp|rsa/.test(n)) return "RSA-modexp";
+  if (/modexp|rsa_modexp/.test(n)) return "RSA-modexp";
+  if (/tls|cipher_suite|ssl/.test(n)) return "TLS-stack";
+  if (/drbg|random|rng/.test(n)) return "DRBG";
   if (/inventory|copy_record|find_parcel/.test(n)) return "BENIGN";
   if (f.includes("enterprise") || /mix\.ll/.test(f)) return null;
   if (f.includes("benign") || f.includes("crc")) return "BENIGN";
@@ -32,6 +34,9 @@ function labelFunction(file: string, name: string): (typeof LABELS)[number] | nu
   if (f.includes("sha1")) return "SHA-1";
   if (f.includes("md5")) return "MD5";
   if (f.includes("chacha")) return "ChaCha20";
+  if (f.includes("rsa_pkcs1") || f.includes("pkcs1")) return "RSA-key";
+  if (f.includes("tls")) return "TLS-stack";
+  if (f.includes("drbg") || f.includes("nist_drbg")) return "DRBG";
   if (f.includes("rsa")) return "RSA-modexp";
   return null;
 }

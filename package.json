@@ -8,6 +8,8 @@
     "start": "next start --hostname 127.0.0.1 --port 43147",
     "lint": "eslint",
     "verify": "tsx scripts/verify-corpus.ts",
+    "verify:holdout": "tsx scripts/holdout-verify.ts",
+    "verify:all": "npm run verify && npm run verify:holdout",
     "train": "tsx scripts/train-model.ts",
     "corpus": "bash scripts/emit-corpus.sh"
   },
