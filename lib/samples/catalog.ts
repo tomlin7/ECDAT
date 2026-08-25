@@ -92,6 +92,46 @@ export const SAMPLE_CATALOG: SampleMeta[] = [
     expected: [],
     format: "ir",
   },
+  {
+    id: "hmac",
+    filename: "hmac.ll",
+    title: "HMAC-SHA256 IR",
+    blurb: "RFC 2104 ipad/opad + SHA-256 K[] constants.",
+    expected: ["HMAC-SHA256", "SHA-256"],
+    format: "ir",
+  },
+  {
+    id: "aes_gcm",
+    filename: "aes_gcm.ll",
+    title: "AES-GCM IR",
+    blurb: "GHASH R = 0xe1<<120 reduction constant.",
+    expected: ["AES-GCM"],
+    format: "ir",
+  },
+  {
+    id: "curve25519",
+    filename: "curve25519.ll",
+    title: "Curve25519 IR",
+    blurb: "RFC 7748 base point 9 + clamp mask.",
+    expected: ["Curve25519"],
+    format: "ir",
+  },
+  {
+    id: "vendor_openssl_stripped",
+    filename: "vendor_openssl_aes_stripped.o",
+    title: "Stripped vendor AES (.o)",
+    blurb: "OpenSSL Te0 + S-box, strip --strip-all — no symbols.",
+    expected: ["AES"],
+    format: "elf",
+  },
+  {
+    id: "enterprise_mix_stripped",
+    filename: "enterprise_mix_stripped.o",
+    title: "Stripped enterprise mix (.o)",
+    blurb: "-O2 stripped multi-crypto ELF object from enterprise_mix.c.",
+    expected: ["AES", "SHA-256", "ChaCha20", "MD5"],
+    format: "elf",
+  },
 ];
 
 export function corpusIrDir(): string {

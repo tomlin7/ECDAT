@@ -1,7 +1,8 @@
 #include <stdint.h>
+#include <string.h>
 
-/* "expand 32-byte k" */
-static const uint32_t sigma[4] = {0x61707865, 0x3320646e, 0x79622d32, 0x6b206574};
+/* "expand 32-byte k" — exported so -O2 objects retain rodata for byte-scan. */
+const uint32_t chacha20_sigma[4] = {0x61707865, 0x3320646e, 0x79622d32, 0x6b206574};
 
 static uint32_t rotl(uint32_t x, int n) { return (x << n) | (x >> (32 - n)); }
 
@@ -23,10 +24,7 @@ static void quarter_round(uint32_t *a, uint32_t *b, uint32_t *c, uint32_t *d) {
 void chacha20_block(uint32_t out[16], const uint32_t key[8], uint32_t counter,
                     const uint32_t nonce[3]) {
   uint32_t x[16];
-  x[0] = sigma[0];
-  x[1] = sigma[1];
-  x[2] = sigma[2];
-  x[3] = sigma[3];
+  memcpy(x, chacha20_sigma, 16);
   for (int i = 0; i < 8; i++)
     x[4 + i] = key[i];
   x[12] = counter;

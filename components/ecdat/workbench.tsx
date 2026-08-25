@@ -25,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import type { AnalysisReport, Finding, FunctionRecord } from "@/lib/ir/types";
+import { inventoryToHtml, inventoryToJson } from "@/lib/report";
 import type { SampleMeta } from "@/lib/samples/catalog";
 import { cn } from "@/lib/utils";
 
@@ -449,6 +450,7 @@ function ResultsPane({
         <Tabs defaultValue="evidence" className="pt-1">
           <TabsList>
             <TabsTrigger value="evidence">Evidence</TabsTrigger>
+            <TabsTrigger value="inventory">Inventory</TabsTrigger>
             <TabsTrigger value="ir">Function IR</TabsTrigger>
             <TabsTrigger value="mix">Opcode mix</TabsTrigger>
             <TabsTrigger value="fns">Functions</TabsTrigger>
@@ -494,6 +496,93 @@ function ResultsPane({
               <p className="text-sm text-muted-foreground">
                 Select a finding to see constant-table and CFG evidence.
               </p>
+            )}
+          </TabsContent>
+          <TabsContent value="inventory" className="mt-3 space-y-3">
+            {report.inventory ? (
+              <>
+                <div className="grid grid-cols-3 gap-2">
+                  <Stat label="Asset" value={report.inventory.assetId.slice(0, 18)} />
+                  <Stat label="OK" value={String(report.inventory.counts.ok)} />
+                  <Stat
+                    label="Review"
+                    value={String(report.inventory.counts.review)}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const blob = new Blob([inventoryToJson(report.inventory)], {
+                        type: "application/json",
+                      });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${report.filename.replace(/[^a-z0-9._-]+/gi, "_")}-inventory.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Export JSON
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const blob = new Blob([inventoryToHtml(report.inventory)], {
+                        type: "text/html",
+                      });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${report.filename.replace(/[^a-z0-9._-]+/gi, "_")}-inventory.html`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Export HTML
+                  </Button>
+                </div>
+                <ScrollArea className="h-64 rounded-lg border border-border/80">
+                  <table className="w-full text-left text-xs">
+                    <thead className="sticky top-0 bg-muted/80">
+                      <tr>
+                        <th className="px-2 py-1.5">ID</th>
+                        <th className="px-2 py-1.5">Primitive</th>
+                        <th className="px-2 py-1.5">Sev</th>
+                        <th className="px-2 py-1.5">Conf</th>
+                        <th className="px-2 py-1.5">Location</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.inventory.rows.map((row) => (
+                        <tr key={row.id} className="border-t border-border/60">
+                          <td className="px-2 py-1.5 font-mono">{row.id}</td>
+                          <td className="px-2 py-1.5">{row.primitive}</td>
+                          <td className="px-2 py-1.5">{row.severity}</td>
+                          <td className="px-2 py-1.5 font-mono">
+                            {(row.confidence * 100).toFixed(0)}%
+                          </td>
+                          <td className="px-2 py-1.5 font-mono text-muted-foreground">
+                            {row.locations.slice(0, 2).join(" · ")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </ScrollArea>
+                {report.inventory.rows[0] ? (
+                  <p className="text-sm text-muted-foreground">
+                    {report.inventory.rows[0].recommendation}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">No inventory rows.</p>
             )}
           </TabsContent>
           <TabsContent value="ir" className="mt-3 space-y-2">
