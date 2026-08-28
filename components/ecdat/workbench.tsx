@@ -1274,8 +1274,8 @@ function SeverityDot({ severity }: { severity: Finding["severity"] }) {
 
 function SourceBadge({ source }: { source: Finding["source"] }) {
   if (source === "ml") return <Badge variant="info">model</Badge>;
-  if (source === "binary") return <Badge variant="secondary">bytes</Badge>;
-  return <Badge variant="outline">IR</Badge>;
+  if (source === "binary") return <Badge variant="channel">bytes</Badge>;
+  return <Badge variant="ir">IR</Badge>;
 }
 
 function SeverityBadge({ severity }: { severity: Finding["severity"] }) {
