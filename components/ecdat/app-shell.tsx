@@ -137,7 +137,7 @@ export function AppShell({
             <FilterDropdown label="llvm-ir" />
             <FilterDropdown label="All artifacts" />
             <FilterDropdown label="14D" />
-            <div className="flex min-w-[180px] flex-1 items-center gap-2 rounded-[6px] border border-[#3a3a46] border-b-[3px] border-b-[#121218] bg-[#2a2a32] px-3 py-1.5">
+            <div className="flex max-w-[320px] min-w-[140px] flex-1 items-center gap-2 rounded-[6px] border border-[#3a3a46] border-b-[3px] border-b-[#121218] bg-[#2a2a32] px-3 py-1.5">
               <Search className="size-3.5 shrink-0 text-[#8b8794]" />
               <span className="rounded-md bg-[#3d3560] px-2 py-0.5 text-[12px] text-[#e2d9ff]">
                 is unresolved
@@ -148,7 +148,7 @@ export function AppShell({
                 readOnly
               />
             </div>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
               <button type="button" className="btn-tactile-icon" title="Replay demo">
                 <Play className="size-3.5" />
               </button>
