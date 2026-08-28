@@ -8,18 +8,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          "border border-[#7a71e8] border-b-[3px] border-b-[#4438a8] bg-[#635dff] text-white shadow-none transition-[transform,border-bottom-width,background-color] duration-75 hover:bg-[#6f68ff] active:translate-y-[2px] active:border-b",
-        tactile:
-          "border border-[#3a3a46] border-b-[3px] border-b-[#121218] bg-[#2a2a32] text-[#f0edf6] shadow-none transition-[transform,border-bottom-width,background-color] duration-75 hover:bg-[#32323c] active:translate-y-[2px] active:border-b",
-        outline:
-          "border border-[#3a3a46] border-b-[3px] border-b-[#121218] bg-[#2a2a32] text-foreground shadow-none transition-[transform,border-bottom-width,background-color] duration-75 hover:bg-[#32323c] active:translate-y-[2px] active:border-b",
-        secondary:
-          "border border-[#3a3a46] border-b-[3px] border-b-[#121218] bg-[#2c2c35] text-secondary-foreground shadow-none transition-[transform,border-bottom-width,background-color] duration-75 hover:bg-[#34343f] active:translate-y-[2px] active:border-b",
+        default: "btn-tactile-primary",
+        tactile: "btn-tactile",
+        outline: "btn-tactile text-foreground",
+        secondary: "btn-tactile bg-[#2c2c35] text-secondary-foreground",
         ghost:
           "border border-transparent bg-transparent text-muted-foreground shadow-none hover:bg-muted hover:text-foreground active:translate-y-0",
         destructive:
-          "border border-destructive/30 border-b-[3px] border-b-destructive/50 bg-destructive/15 text-destructive shadow-none hover:bg-destructive/25 active:translate-y-[2px] active:border-b",
+          "btn-tactile border-t-destructive/20 bg-destructive/15 text-destructive shadow-[0_2px_0_0_rgba(0,0,0,0.45)] hover:bg-destructive/25",
         link: "border-transparent bg-transparent text-primary underline-offset-4 shadow-none hover:underline active:translate-y-0",
       },
       size: {
@@ -28,10 +24,13 @@ const buttonVariants = cva(
         xs: "h-6 gap-1 px-2 text-xs has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-7 gap-1 px-2.5 text-[0.8rem] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         lg: "h-9 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-8 p-0",
-        "icon-xs": "size-6 p-0 [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-7 p-0",
-        "icon-lg": "size-9 p-0",
+        icon: "size-8 gap-0 border-0 border-t border-white/10 bg-[#211d24] p-0 text-white shadow-[0_2px_0_0_#0a0a0c] hover:bg-[#2a2630] active:translate-y-0.5 active:shadow-none",
+        "icon-xs":
+          "size-6 gap-0 border-0 border-t border-white/10 bg-[#211d24] p-0 text-white shadow-[0_2px_0_0_#0a0a0c] hover:bg-[#2a2630] active:translate-y-0.5 active:shadow-none [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm":
+          "size-7 gap-0 border-0 border-t border-white/10 bg-[#211d24] p-0 text-white shadow-[0_2px_0_0_#0a0a0c] hover:bg-[#2a2630] active:translate-y-0.5 active:shadow-none",
+        "icon-lg":
+          "size-9 gap-0 border-0 border-t border-white/10 bg-[#211d24] p-0 text-white shadow-[0_2px_0_0_#0a0a0c] hover:bg-[#2a2630] active:translate-y-0.5 active:shadow-none",
       },
     },
     defaultVariants: {

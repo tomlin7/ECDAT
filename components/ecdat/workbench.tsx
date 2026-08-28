@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
-  Binary,
   ChevronRight,
   FileCode2,
   Loader2,
@@ -12,9 +11,9 @@ import {
 } from "lucide-react";
 import {
   AppShell,
+  FilterChip,
   PreviewCard,
   SetupCard,
-  StepCircle,
   WorkbenchPanel,
   type AppView,
 } from "@/components/ecdat/app-shell";
@@ -41,6 +40,7 @@ export function Workbench() {
   const [view, setView] = useState<AppView>("discover");
   const [navSection, setNavSection] = useState("feed");
   const [findingFilter, setFindingFilter] = useState<FindingFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [samples, setSamples] = useState<SampleMeta[]>([]);
   const [ir, setIr] = useState("");
   const [filename, setFilename] = useState("pasted.ll");
@@ -193,23 +193,59 @@ export function Workbench() {
 
   const filteredFindings = useMemo(() => {
     if (!report) return [];
+    const q = searchQuery.trim().toLowerCase();
     return report.findings.filter((f) => {
       if (findingFilter === "weak") return f.severity === "weak";
       if (findingFilter === "ir") return f.source === "signature";
       if (findingFilter === "bytes") return f.source === "binary";
       if (findingFilter === "ml") return f.source === "ml";
-      return true;
+      if (!q) return true;
+      return (
+        f.primitive.toLowerCase().includes(q) ||
+        f.title.toLowerCase().includes(q) ||
+        f.id.toLowerCase().includes(q)
+      );
     });
-  }, [report, findingFilter]);
+  }, [report, findingFilter, searchQuery]);
+
+  const channelCounts = useMemo(() => {
+    if (!report) return { ir: 0, bytes: 0, ml: 0 };
+    return {
+      ir: report.findings.filter((f) => f.source === "signature").length,
+      bytes: report.findings.filter((f) => f.source === "binary").length,
+      ml: report.findings.filter((f) => f.source === "ml").length,
+    };
+  }, [report]);
+
+  function handleViewChange(next: AppView) {
+    setView(next);
+    if (next === "discover") setNavSection("feed");
+    if (next === "corpus") setNavSection("all");
+    if (next === "inventory") setNavSection("export");
+    if (next === "ingest") setNavSection("upload");
+  }
+
+  function handleSecondarySelect(id: string) {
+    setNavSection(id);
+    if (view === "discover") {
+      if (id === "feed") setFindingFilter("all");
+      if (id === "weak") setFindingFilter("weak");
+      if (id === "ir") setFindingFilter("ir");
+      if (id === "bytes") setFindingFilter("bytes");
+      if (id === "ml") setFindingFilter("ml");
+    }
+  }
 
   const secondaryConfig = useMemo(() => {
     if (view === "discover") {
       return {
-        title: "Discover",
+        title: "Findings",
         items: [
-          { id: "feed", label: "Feed" },
-          { id: "weak", label: "Weak / deprecated" },
-          { id: "channels", label: "Channels" },
+          { id: "feed", label: "All findings", count: report?.findings.length },
+          { id: "weak", label: "Weak / deprecated", count: report?.weakCount },
+          { id: "ir", label: "IR signatures", count: channelCounts.ir },
+          { id: "bytes", label: "Raw-byte scan", count: channelCounts.bytes },
+          { id: "ml", label: "CFG model", count: channelCounts.ml },
         ],
       };
     }
@@ -217,9 +253,17 @@ export function Workbench() {
       return {
         title: "Corpus",
         items: [
-          { id: "all", label: "All samples" },
-          { id: "elf", label: "Binary (.o/.so)" },
-          { id: "ir", label: "LLVM IR" },
+          { id: "all", label: "All samples", count: samples.length },
+          {
+            id: "elf",
+            label: "Binary (.o/.so)",
+            count: samples.filter((s) => s.format === "elf").length,
+          },
+          {
+            id: "ir",
+            label: "LLVM IR",
+            count: samples.filter((s) => s.format === "ir").length,
+          },
         ],
       };
     }
@@ -227,7 +271,7 @@ export function Workbench() {
       return {
         title: "Inventory",
         items: [
-          { id: "export", label: "Export" },
+          { id: "export", label: "Export report" },
           { id: "metadata", label: "Asset metadata" },
         ],
       };
@@ -235,52 +279,140 @@ export function Workbench() {
     return {
       title: "Ingest",
       items: [
-        { id: "upload", label: "Upload" },
+        { id: "upload", label: "Upload file" },
         { id: "paste", label: "Paste IR" },
       ],
     };
-  }, [view]);
+  }, [view, report, samples, channelCounts]);
 
   const breadcrumb =
     view === "discover"
       ? report
-        ? `Feed / ${report.filename}`
-        : "Feed"
+        ? report.filename
+        : "No artifact loaded"
       : view === "ingest"
-        ? "Ingest"
+        ? "Ingest artifact"
         : view === "corpus"
-          ? "Corpus"
-          : "Inventory";
+          ? "Evaluation corpus"
+          : "Enterprise inventory";
 
-  const shellActions =
-    loading ? (
-      <button type="button" className="btn-tactile-primary h-8 px-3" disabled>
-        <Loader2 className="size-3.5 animate-spin" />
-        Analyzing…
-      </button>
-    ) : (
-      <button
-        type="button"
-        className="btn-tactile-primary h-8 px-3"
-        onClick={() => {
-          if (ir.trim()) void runAnalysis(ir, filename);
-          else setView("ingest");
-        }}
+  const toolbarMeta = report ? (
+  <>
+      <span className="btn-tactile h-8 px-2.5 font-mono text-[12px]">
+        {report.ingest.kind}
+      </span>
+      <span className="btn-tactile h-8 px-2.5 font-mono text-[12px]">
+        {report.ingest.bytes.toLocaleString()} B
+      </span>
+      <span className="btn-tactile h-8 px-2.5 text-[12px]">
+        {report.findings.length} primitives
+      </span>
+    </>
+  ) : null;
+
+  const toolbarFilters =
+    view === "discover" && report ? (
+      <>
+        <FilterChip
+          label="All"
+          active={findingFilter === "all" && navSection === "feed"}
+          onClick={() => {
+            setNavSection("feed");
+            setFindingFilter("all");
+          }}
+        />
+        <FilterChip
+          label="Weak"
+          active={findingFilter === "weak"}
+          onClick={() => {
+            setNavSection("weak");
+            setFindingFilter("weak");
+          }}
+        />
+      </>
+    ) : null;
+
+  const shellActions = loading ? (
+    <button type="button" className="btn-tactile-primary h-8 px-3" disabled>
+      <Loader2 className="size-3.5 animate-spin" />
+      Analyzing…
+    </button>
+  ) : view === "inventory" && patchedInventory ? (
+    <>
+      <Button
+        size="sm"
+        variant="tactile"
+        onClick={() =>
+          downloadBlob(
+            inventoryToJson(patchedInventory),
+            "application/json",
+            `${patchedInventory.assetId}-inventory.json`,
+          )
+        }
       >
-        Save as
-      </button>
-    );
+        Export JSON
+      </Button>
+      <Button
+        size="sm"
+        onClick={() =>
+          downloadBlob(
+            inventoryToHtml(patchedInventory),
+            "text/html",
+            `${patchedInventory.assetId}-inventory.html`,
+          )
+        }
+      >
+        Export HTML
+      </Button>
+    </>
+  ) : view === "ingest" && ir.trim() ? (
+    <Button size="sm" onClick={() => void runAnalysis(ir, filename)}>
+      <FileCode2 />
+      Analyze
+    </Button>
+  ) : report ? (
+    <Button size="sm" onClick={() => handleViewChange("inventory")}>
+      View inventory
+    </Button>
+  ) : (
+    <Button size="sm" onClick={() => handleViewChange("ingest")}>
+      <Upload />
+      Upload artifact
+    </Button>
+  );
 
   return (
     <AppShell
       view={view}
-      onView={setView}
+      onView={handleViewChange}
       secondaryTitle={secondaryConfig.title}
       secondaryItems={secondaryConfig.items}
       secondaryActive={navSection}
-      onSecondarySelect={setNavSection}
+      onSecondarySelect={handleSecondarySelect}
       breadcrumb={breadcrumb}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      searchPlaceholder={
+        view === "discover"
+          ? "Filter by primitive or title…"
+          : view === "corpus"
+            ? "Filter samples…"
+            : "Search…"
+      }
+      meta={toolbarMeta}
+      toolbarFilters={toolbarFilters}
       actions={shellActions}
+      footerAction={
+        patchedInventory
+          ? {
+              label: "Export inventory",
+              onClick: () => handleViewChange("inventory"),
+            }
+          : {
+              label: "Analyze an artifact",
+              onClick: () => handleViewChange("ingest"),
+            }
+      }
     >
       {error ? (
         <div className="p-4">
@@ -298,6 +430,7 @@ export function Workbench() {
           filename={filename}
           loading={loading}
           dragOver={dragOver}
+          section={navSection}
           onDragOver={setDragOver}
           onFile={onFile}
           onIrChange={setIr}
@@ -309,6 +442,7 @@ export function Workbench() {
         <CorpusView
           samples={samples}
           section={navSection}
+          searchQuery={searchQuery}
           loading={loading}
           onLoad={loadSample}
         />
@@ -317,12 +451,14 @@ export function Workbench() {
       {view === "inventory" ? (
         <InventoryView
           inventory={patchedInventory}
+          section={navSection}
           assetId={assetId}
           businessUnit={businessUnit}
           orgSite={orgSite}
           onAssetId={setAssetId}
           onBusinessUnit={setBusinessUnit}
           onOrgSite={setOrgSite}
+          onGoAnalyze={() => handleViewChange("ingest")}
         />
       ) : null}
 
@@ -331,17 +467,20 @@ export function Workbench() {
           loading={loading}
           report={report}
           findings={filteredFindings}
+          samples={samples}
           selectedFinding={selectedFinding}
           activeFinding={activeFinding}
           activeFn={activeFn}
+          channelCounts={channelCounts}
           onSelectFinding={(id) => {
             setSelectedFinding(id);
             const f = report?.findings.find((x) => x.id === id);
             if (f?.functions[0]) setSelectedFn(f.functions[0]);
           }}
           onSelectFn={setSelectedFn}
-          onGoIngest={() => setView("ingest")}
-          onLoadDemo={() => void loadSample("enterprise_mix")}
+          onGoIngest={() => handleViewChange("ingest")}
+          onGoCorpus={() => handleViewChange("corpus")}
+          onLoadSample={loadSample}
         />
       ) : null}
     </AppShell>
@@ -353,6 +492,7 @@ function IngestView({
   filename,
   loading,
   dragOver,
+  section,
   onDragOver,
   onFile,
   onIrChange,
@@ -362,71 +502,82 @@ function IngestView({
   filename: string;
   loading: boolean;
   dragOver: boolean;
+  section: string;
   onDragOver: (v: boolean) => void;
   onFile: (f: File) => void;
   onIrChange: (v: string) => void;
   onAnalyze: () => void;
 }) {
+  const showUpload = section !== "paste";
+  const showPaste = section !== "upload";
+
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <SetupCard className="p-6">
-        <h2 className="text-[15px] font-semibold">Upload or paste</h2>
-        <p className="mt-1 text-[13px] text-muted-foreground">
+    <div className="mx-auto max-w-3xl">
+      <WorkbenchPanel>
+        <h2 className="text-[18px] font-semibold text-white">Ingest artifact</h2>
+        <p className="mt-1 text-[13px] text-[#c4c1d2]">
           LLVM IR, ELF/PE objects, or Clang{" "}
           <span className="font-mono">.o</span> /{" "}
-          <span className="font-mono">.so</span>. Max 8 MB.
+          <span className="font-mono">.so</span>. Max 8 MB. Analysis runs three
+          static channels: IR constant tables, CFG softmax, and raw-byte scan.
         </p>
-        <label
-          onDragOver={(e) => {
-            e.preventDefault();
-            onDragOver(true);
-          }}
-          onDragLeave={() => onDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            onDragOver(false);
-            const file = e.dataTransfer.files[0];
-            if (file) void onFile(file);
-          }}
-          className={cn(
-            "mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed px-4 py-10 text-center transition-colors",
-            dragOver
-              ? "border-primary bg-primary/10"
-              : "border-border bg-[#1a1a23] hover:border-primary/40",
-          )}
-        >
-          <Upload className="size-5 text-muted-foreground" />
-          <span className="text-[13px]">
-            Drop <span className="font-mono">.ll / .o / ELF / PE</span> or
-            browse
-          </span>
-          <input
-            type="file"
-            accept=".ll,.ir,.txt,.bc,.o,.so,.exe,.bin,.elf"
-            className="sr-only"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
+        {showUpload ? (
+          <label
+            onDragOver={(e) => {
+              e.preventDefault();
+              onDragOver(true);
+            }}
+            onDragLeave={() => onDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              onDragOver(false);
+              const file = e.dataTransfer.files[0];
               if (file) void onFile(file);
             }}
-          />
-        </label>
-        <Textarea
-          value={ir}
-          onChange={(e) => onIrChange(e.target.value)}
-          placeholder={"; ModuleID = 'module'\ndefine i32 @main() {\n  ret i32 0\n}"}
-          className="mt-4 min-h-40 border-border bg-[#1a1a23] font-mono text-[12px]"
-        />
-        <div className="mt-3 flex items-center justify-between">
-          <span className="font-mono text-[11px] text-muted-foreground">
-            {filename}
-            {ir ? ` · ${(ir.length / 1024).toFixed(1)} KB` : ""}
-          </span>
-          <Button onClick={onAnalyze} disabled={loading || !ir.trim()}>
-            {loading ? <Loader2 className="animate-spin" /> : <FileCode2 />}
-            Analyze IR
-          </Button>
-        </div>
-      </SetupCard>
+            className={cn(
+              "mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed px-4 py-10 text-center transition-colors",
+              dragOver
+                ? "border-primary bg-primary/10"
+                : "border-border bg-[#1a1a23] hover:border-primary/40",
+            )}
+          >
+            <Upload className="size-5 text-muted-foreground" />
+            <span className="text-[13px]">
+              Drop <span className="font-mono">.ll / .o / ELF / PE</span> or
+              browse
+            </span>
+            <input
+              type="file"
+              accept=".ll,.ir,.txt,.bc,.o,.so,.exe,.bin,.elf"
+              className="sr-only"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void onFile(file);
+              }}
+            />
+          </label>
+        ) : null}
+        {showPaste ? (
+          <>
+            <Textarea
+              value={ir}
+              onChange={(e) => onIrChange(e.target.value)}
+              placeholder={"; ModuleID = 'module'\ndefine i32 @main() {\n  ret i32 0\n}"}
+              className="mt-4 min-h-48 border-border bg-[#1a1a23] font-mono text-[12px]"
+            />
+            <div className="mt-3 flex items-center justify-between">
+              <span className="font-mono text-[11px] text-muted-foreground">
+                {filename}
+                {ir ? ` · ${(ir.length / 1024).toFixed(1)} KB` : ""}
+              </span>
+              <Button onClick={onAnalyze} disabled={loading || !ir.trim()}>
+                {loading ? <Loader2 className="animate-spin" /> : <FileCode2 />}
+                Analyze IR
+              </Button>
+            </div>
+          </>
+        ) : null}
+      </WorkbenchPanel>
     </div>
   );
 }
@@ -434,22 +585,38 @@ function IngestView({
 function CorpusView({
   samples,
   section,
+  searchQuery,
   loading,
   onLoad,
 }: {
   samples: SampleMeta[];
   section: string;
+  searchQuery: string;
   loading: boolean;
   onLoad: (id: string) => void;
 }) {
+  const q = searchQuery.trim().toLowerCase();
   const filtered = samples.filter((s) => {
-    if (section === "elf") return s.format === "elf";
-    if (section === "ir") return s.format === "ir";
-    return true;
+    if (section === "elf" && s.format !== "elf") return false;
+    if (section === "ir" && s.format !== "ir") return false;
+    if (!q) return true;
+    return (
+      s.title.toLowerCase().includes(q) ||
+      s.id.toLowerCase().includes(q) ||
+      s.blurb.toLowerCase().includes(q) ||
+      s.expected.some((e) => e.toLowerCase().includes(q))
+    );
   });
 
   return (
-    <div className="p-6">
+    <div>
+      <WorkbenchPanel className="mb-4">
+        <h2 className="text-[18px] font-semibold text-white">Evaluation corpus</h2>
+        <p className="mt-1 text-[13px] text-[#c4c1d2]">
+          {samples.length} labeled samples for SIH demo — click any card to
+          analyze and jump to findings.
+        </p>
+      </WorkbenchPanel>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((s) => (
           <button
@@ -483,28 +650,41 @@ function CorpusView({
   );
 }
 
+const DEMO_SAMPLE_IDS = [
+  "enterprise_mix_stripped",
+  "vendor_openssl_stripped",
+  "crypto_firmware_pe",
+  "vendor_aes_so",
+] as const;
+
 function DiscoverView({
   loading,
   report,
   findings,
+  samples,
   selectedFinding,
   activeFinding,
   activeFn,
+  channelCounts,
   onSelectFinding,
   onSelectFn,
   onGoIngest,
-  onLoadDemo,
+  onGoCorpus,
+  onLoadSample,
 }: {
   loading: boolean;
   report: AnalysisReport | null;
   findings: Finding[];
+  samples: SampleMeta[];
   selectedFinding: string | null;
   activeFinding: Finding | null;
   activeFn: FunctionRecord | null;
+  channelCounts: { ir: number; bytes: number; ml: number };
   onSelectFinding: (id: string) => void;
   onSelectFn: (name: string) => void;
   onGoIngest: () => void;
-  onLoadDemo: () => void;
+  onGoCorpus: () => void;
+  onLoadSample: (id: string) => void;
 }) {
   if (loading && !report) {
     return (
@@ -516,78 +696,74 @@ function DiscoverView({
   }
 
   if (!report) {
+    const demoSamples = DEMO_SAMPLE_IDS.map((id) =>
+      samples.find((s) => s.id === id),
+    ).filter((s): s is SampleMeta => Boolean(s));
+
     return (
       <WorkbenchPanel>
-        <div className="mb-6">
-          <h1 className="text-[22px] font-bold text-white">
-            Get Started with ECDAT
-          </h1>
-          <p className="mt-1 text-[13px] text-[#c4c1d2]">
-            Upload LLVM IR or a stripped binary to discover AES, SHA, TLS,
-            RSA-shaped modexp, and weak primitives — with evidence from three
-            static channels.
-          </p>
+        <h1 className="text-[22px] font-bold text-white">
+          Cryptographic discovery workbench
+        </h1>
+        <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-[#c4c1d2]">
+          ECDAT statically inventories primitives in LLVM IR and stripped
+          binaries using three independent channels — constant-table signatures,
+          CFG opcode softmax, and raw-byte anchors — with evidence attached to
+          every finding.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button onClick={onGoIngest}>
+            <Upload />
+            Upload artifact
+          </Button>
+          <Button variant="tactile" onClick={onGoCorpus}>
+            Browse full corpus
+          </Button>
         </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <SetupCard>
-            <h2 className="text-[15px] font-semibold text-white">
-              Set up the ECDAT analyzer
-            </h2>
-            <div className="mt-5 flex gap-3">
-              <StepCircle n={1} active />
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-semibold text-white">Install</p>
-                <p className="mt-1 text-[12px] text-[#a09aab]">
-                  Upload an artifact or load a corpus sample:
-                </p>
-                <div className="mt-3 overflow-hidden rounded-lg border border-[#34343f] bg-[#1a1a22]">
-                  <div className="flex items-center justify-between border-b border-[#34343f] px-3 py-1.5">
-                    <span className="text-[11px] text-[#8b8794]">cli</span>
-                    <button
-                      type="button"
-                      className="text-[11px] text-[#a78bfa] hover:underline"
-                    >
-                      Copy instructions
-                    </button>
-                  </div>
-                  <pre className="overflow-x-auto p-3 font-mono text-[12px] text-[#c4b5fd]">
-                    curl -F file=@artifact.o /api/analyze
-                  </pre>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button onClick={onGoIngest}>
-                    <Upload />
-                    Upload artifact
-                  </Button>
-                  <Button variant="tactile" onClick={onLoadDemo}>
-                    <Binary />
-                    Load enterprise mix
-                  </Button>
-                </div>
+        <h2 className="mt-8 text-[15px] font-semibold text-white">
+          Demo-ready samples
+        </h2>
+        <p className="mt-1 text-[12px] text-[#a09aab]">
+          One click loads and analyzes — ideal for tomorrow&apos;s presentation.
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {demoSamples.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              disabled={loading}
+              onClick={() => void onLoadSample(s.id)}
+              className="group rounded-lg border border-[#34343f] bg-[#24242c] p-4 text-left transition-colors hover:border-[#6c5fc7]/50 hover:bg-[#2a2638]"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-[13px] font-medium text-white">
+                  {s.title}
+                </span>
+                <Badge variant="outline">{s.format}</Badge>
               </div>
-            </div>
-            <div className="mt-6 flex items-center gap-3 opacity-50">
-              <StepCircle n={2} />
-              <span className="text-[13px] text-[#8b8794]">Configure asset metadata</span>
-            </div>
-            <div className="mt-3 flex items-center gap-3 opacity-50">
-              <StepCircle n={3} />
-              <span className="text-[13px] text-[#8b8794]">Verify findings & export inventory</span>
-            </div>
-          </SetupCard>
-
-          <div>
-            <h2 className="mb-3 text-[15px] font-semibold text-white">
-              Preview a cryptographic finding
-            </h2>
-            <PreviewCard>
-              <PreviewIssueList />
-              <div className="flex items-center justify-between bg-[#6c5fc7] px-4 py-2 text-[12px] font-medium text-white">
-                <span>1/3 · Select a finding</span>
-                <span className="opacity-80">← →</span>
-              </div>
-            </PreviewCard>
-          </div>
+              <p className="mt-2 text-[12px] text-[#a09aab]">{s.blurb}</p>
+              <p className="mt-2 font-mono text-[10px] text-[#8b8794]">
+                expects: {s.expected.join(" · ") || "none"}
+              </p>
+            </button>
+          ))}
+        </div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <ChannelCard
+            title="IR signatures"
+            detail="AES S-box, SHA K constants, ChaCha sigma"
+            count={null}
+          />
+          <ChannelCard
+            title="CFG softmax"
+            detail="Opcode mix classifier on holdout corpus"
+            count={null}
+          />
+          <ChannelCard
+            title="Raw-byte scan"
+            detail="TLS OIDs, RSA exponents, Curve25519 clamp"
+            count={null}
+          />
         </div>
       </WorkbenchPanel>
     );
@@ -595,6 +771,37 @@ function DiscoverView({
 
   return (
     <WorkbenchPanel className="flex h-full min-h-0 flex-col p-0">
+      <div className="border-b border-[#34343f] px-5 py-3">
+        <div className="flex flex-wrap items-center gap-4 text-[12px] text-[#c4c1d2]">
+          <span>
+            <strong className="text-white">{report.functionCount}</strong>{" "}
+            functions
+          </span>
+          <span>
+            <strong className="text-white">{report.findings.length}</strong>{" "}
+            primitives
+          </span>
+          <span>
+            <strong
+              className={report.weakCount > 0 ? "text-[#f5a623]" : "text-white"}
+            >
+              {report.weakCount}
+            </strong>{" "}
+            weak
+          </span>
+          <span className="text-[#8b8794]">·</span>
+          <span>
+            IR {channelCounts.ir} · bytes {channelCounts.bytes} · model{" "}
+            {channelCounts.ml}
+          </span>
+          {report.summary ? (
+            <>
+              <span className="text-[#8b8794]">·</span>
+              <span className="text-[#a09aab]">{report.summary}</span>
+            </>
+          ) : null}
+        </div>
+      </div>
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="flex w-full shrink-0 flex-col border-b border-[#34343f] lg:w-[360px] lg:border-r lg:border-b-0">
           <div className="grid grid-cols-3 gap-px border-b border-[#34343f] bg-[#34343f]">
@@ -794,36 +1001,48 @@ function FindingDetail({
 
 function InventoryView({
   inventory,
+  section,
   assetId,
   businessUnit,
   orgSite,
   onAssetId,
   onBusinessUnit,
   onOrgSite,
+  onGoAnalyze,
 }: {
   inventory: EnterpriseInventory | null;
+  section: string;
   assetId: string;
   businessUnit: string;
   orgSite: string;
   onAssetId: (v: string) => void;
   onBusinessUnit: (v: string) => void;
   onOrgSite: (v: string) => void;
+  onGoAnalyze: () => void;
 }) {
   if (!inventory) {
     return (
       <WorkbenchPanel>
         <h2 className="text-[18px] font-semibold text-white">No inventory yet</h2>
         <p className="mt-2 max-w-lg text-[13px] text-[#c4c1d2]">
-          Run an analysis first — then tag the asset and export a JSON or HTML
-          cryptographic inventory report.
+          Run an analysis on an artifact first. ECDAT builds a cryptographic
+          inventory with asset metadata, primitive rows, and exportable JSON/HTML
+          reports for enterprise posture review.
         </p>
+        <Button className="mt-4" onClick={onGoAnalyze}>
+          <Upload />
+          Analyze an artifact
+        </Button>
       </WorkbenchPanel>
     );
   }
 
+  const showMetadata = section !== "export";
+  const showExport = section !== "metadata";
+
   return (
-    <div className="p-6">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+      {showMetadata ? (
         <SetupCard className="p-5">
           <h2 className="text-[15px] font-semibold">Asset metadata</h2>
           <div className="mt-4 space-y-3">
@@ -873,7 +1092,9 @@ function InventoryView({
             </Button>
           </div>
         </SetupCard>
+      ) : null}
 
+      {showExport ? (
         <SetupCard className="overflow-hidden">
           <div className="border-b border-border px-4 py-3">
             <h2 className="text-[15px] font-semibold">Cryptographic inventory</h2>
@@ -915,7 +1136,29 @@ function InventoryView({
             </table>
           </ScrollArea>
         </SetupCard>
-      </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ChannelCard({
+  title,
+  detail,
+  count,
+}: {
+  title: string;
+  detail: string;
+  count: number | null;
+}) {
+  return (
+    <div className="rounded-lg border border-[#34343f] bg-[#24242c] p-4">
+      <p className="text-[13px] font-medium text-white">{title}</p>
+      <p className="mt-1 text-[12px] text-[#a09aab]">{detail}</p>
+      {count != null ? (
+        <p className="mt-2 font-mono text-[11px] text-[#8b8794]">
+          {count} findings
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -1002,74 +1245,6 @@ function OpcodeBars({ fn }: { fn: FunctionRecord }) {
         inst
       </li>
     </ul>
-  );
-}
-
-function PreviewIssueList() {
-  const rows = [
-    {
-      dot: "bg-[#6c5fc7]",
-      title: "AES-256-GCM",
-      path: "enterprise_mix_stripped.o",
-      badge: "IR table",
-      trend: [2, 4, 3, 6, 5, 8, 7],
-      status: "Ongoing",
-    },
-    {
-      dot: "bg-[#f55459]",
-      title: "MD5",
-      path: "vendor_openssl_aes_stripped.o",
-      badge: "weak",
-      trend: [1, 1, 2, 1, 3, 2, 4],
-      status: "Escalating",
-    },
-    {
-      dot: "bg-[#57bcf0]",
-      title: "TLS stack",
-      path: "pe_tls_blob.exe",
-      badge: "bytes",
-      trend: [3, 2, 4, 3, 2, 3, 2],
-      status: "Ongoing",
-    },
-  ];
-
-  return (
-    <ul>
-      {rows.map((row) => (
-        <li
-          key={row.title}
-          className="flex items-center gap-3 border-b border-[#ececf0] px-4 py-3 last:border-b-0"
-        >
-          <span className={cn("size-2 shrink-0 rounded-full", row.dot)} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-medium">{row.title}</p>
-            <p className="truncate text-[11px] text-[#6b6b76]">{row.path}</p>
-            <span className="mt-1 inline-block rounded bg-[#f0f0f4] px-1.5 py-0.5 text-[10px] font-medium text-[#4a4a55]">
-              {row.badge}
-            </span>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-1">
-            <Sparkline values={row.trend} />
-            <span className="text-[10px] text-[#8b8794]">{row.status}</span>
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function Sparkline({ values }: { values: number[] }) {
-  const max = Math.max(...values, 1);
-  return (
-    <div className="flex h-5 items-end gap-px">
-      {values.map((v, i) => (
-        <div
-          key={i}
-          className="w-[3px] rounded-sm bg-[#6c5fc7]/70"
-          style={{ height: `${(v / max) * 100}%`, minHeight: 2 }}
-        />
-      ))}
-    </div>
   );
 }
 
