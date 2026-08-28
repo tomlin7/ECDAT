@@ -36,44 +36,50 @@
   --color-card: var(--card);
   --color-panel-surface: var(--panel-surface);
   --color-preview-surface: var(--preview-surface);
+  --color-shell-rail: var(--shell-rail);
+  --color-shell-nav: var(--shell-nav);
+  --color-border-muted: var(--border-muted);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
 }
 
-/* Enterprise workbench — dark issues-style UI */
+/* Enterprise workbench — layered dark purple surfaces */
 :root,
 .dark {
-  --background: #1c1c22;
+  --background: #1f1d26;
   --foreground: #f0edf6;
-  --card: #24242c;
+  --shell-rail: #1a1822;
+  --shell-nav: #26242f;
+  --card: #2d2a38;
   --card-foreground: #f0edf6;
-  --popover: #24242c;
+  --popover: #2d2a38;
   --popover-foreground: #f0edf6;
-  --primary: #6c5fc7;
-  --primary-hover: #5849b8;
+  --primary: #7553ff;
+  --primary-hover: #6347e8;
   --primary-foreground: #ffffff;
-  --secondary: #2c2c35;
+  --secondary: #322f3d;
   --secondary-foreground: #f0edf6;
-  --muted: #2c2c35;
+  --muted: #322f3d;
   --muted-foreground: #a09aab;
   --accent: #3d3560;
   --accent-foreground: #e2d9ff;
   --destructive: #e65d6e;
-  --border: #34343f;
-  --input: #2c2c35;
-  --ring: #6c5fc7;
-  --panel-surface: #2b2540;
+  --border: #15131c;
+  --border-muted: #1e1c28;
+  --input: #2d2a38;
+  --ring: #7553ff;
+  --panel-surface: #342f45;
   --preview-surface: #ffffff;
   --radius: 0.5rem;
-  --sidebar: #121217;
+  --sidebar: #26242f;
   --sidebar-foreground: #a09aab;
-  --sidebar-primary: #6c5fc7;
+  --sidebar-primary: #7553ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #6c5fc7;
+  --sidebar-accent: #7553ff;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #2a2a32;
-  --sidebar-ring: #6c5fc7;
+  --sidebar-border: #15131c;
+  --sidebar-ring: #7553ff;
 }
 
 @layer base {
@@ -121,7 +127,7 @@
 
 @layer components {
   .btn-tactile {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-[6px] border-0 border-t border-white/10 bg-[#211d24] text-[13px] font-medium text-white shadow-[0_2px_0_0_#0a0a0c] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#2a2630] active:translate-y-0.5 active:shadow-none;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-[6px] border border-border border-t-white/10 bg-[#2a2834] text-[13px] font-medium text-white shadow-[0_2px_0_0_#0a0a0c] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#34313f] active:translate-y-0.5 active:shadow-none;
   }
 
   .btn-tactile-primary {
@@ -141,6 +147,6 @@
   }
 
   .surface-tactile {
-    @apply rounded-[6px] border-0 border-t border-white/10 bg-[#211d24] shadow-[0_2px_0_0_#0a0a0c];
+    @apply rounded-[6px] border border-border border-t-white/10 bg-[#2a2834] shadow-[0_2px_0_0_#0a0a0c];
   }
 }

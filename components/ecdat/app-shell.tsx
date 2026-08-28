@@ -57,9 +57,8 @@ export function AppShell({
   const [navCollapsed, setNavCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen min-h-0 bg-[#1c1c22] text-[#f0edf6]">
-      {/* Primary actionbar */}
-      <aside className="flex w-[74px] shrink-0 flex-col items-center border-r border-[#2a2a32] bg-[#1a1a1f] py-3">
+    <div className="flex h-screen min-h-0 bg-background text-foreground">
+      <aside className="flex w-[74px] shrink-0 flex-col items-center border-r border-border bg-shell-rail py-3">
         <div className="btn-tactile-logo mb-5 size-10 text-sm">E</div>
 
         <nav className="flex w-full flex-col items-center gap-1">
@@ -102,9 +101,8 @@ export function AppShell({
         </div>
       </aside>
 
-      {/* Secondary navigation panel */}
       {!navCollapsed ? (
-        <aside className="flex w-[220px] shrink-0 flex-col border-r border-[#2a2a32] bg-[#1a1a1f]">
+        <aside className="flex w-[220px] shrink-0 flex-col border-r border-border bg-shell-nav">
           <div className="flex items-center justify-between px-3 pt-3 pb-2">
             <span className="text-[15px] font-semibold text-white">
               {secondaryTitle}
@@ -112,7 +110,7 @@ export function AppShell({
             <button
               type="button"
               onClick={() => setNavCollapsed(true)}
-              className="flex size-7 items-center justify-center rounded-md border border-transparent text-[#8b8794] transition-colors hover:border-[#3d3d48] hover:text-white"
+              className="flex size-7 items-center justify-center rounded-md border border-transparent text-[#8b8794] transition-colors hover:border-border hover:text-white"
               title="Collapse sidebar"
             >
               <ChevronsLeft className="size-4" />
@@ -130,8 +128,8 @@ export function AppShell({
                   className={cn(
                     "flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-[13px] transition-colors",
                     active
-                      ? "bg-[#7553ff] font-medium text-white"
-                      : "border border-transparent text-[#c4c1d2] hover:border-[#3d3d48] hover:text-white",
+                      ? "bg-primary font-medium text-white"
+                      : "border border-transparent text-[#c4c1d2] hover:border-border hover:text-white",
                   )}
                 >
                   <span>{item.label}</span>
@@ -151,12 +149,12 @@ export function AppShell({
           </nav>
 
           {footerAction ? (
-            <div className="mt-auto border-t border-[#2a2a32] p-3">
+            <div className="mt-auto border-t border-border p-3">
               <button
                 type="button"
                 disabled={footerAction.disabled}
                 onClick={footerAction.onClick}
-                className="w-full rounded-md border border-transparent px-3 py-1.5 text-left text-[13px] text-[#c4c1d2] transition-colors hover:border-[#3d3d48] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                className="w-full rounded-md border border-transparent px-3 py-1.5 text-left text-[13px] text-[#c4c1d2] transition-colors hover:border-border hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {footerAction.label}
               </button>
@@ -164,11 +162,11 @@ export function AppShell({
           ) : null}
         </aside>
       ) : (
-        <div className="flex w-10 shrink-0 flex-col border-r border-[#2a2a32] bg-[#1a1a1f]">
+        <div className="flex w-10 shrink-0 flex-col border-r border-border bg-shell-nav">
           <button
             type="button"
             onClick={() => setNavCollapsed(false)}
-            className="mx-auto mt-3 flex size-7 items-center justify-center rounded-md border border-transparent text-[#8b8794] transition-colors hover:border-[#3d3d48] hover:text-white"
+            className="mx-auto mt-3 flex size-7 items-center justify-center rounded-md border border-transparent text-[#8b8794] transition-colors hover:border-border hover:text-white"
             title="Expand sidebar"
           >
             <ChevronsRight className="size-4" />
@@ -177,7 +175,7 @@ export function AppShell({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="shrink-0 border-b border-[#2a2a32] bg-[#1c1c22] px-4 py-2.5">
+        <header className="shrink-0 border-b border-border bg-background px-4 py-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <div className="mr-1 text-[13px] text-[#c4c1d2]">{breadcrumb}</div>
             {meta}
@@ -187,7 +185,7 @@ export function AppShell({
               <input
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="min-w-0 flex-1 bg-transparent text-[13px] text-[#f0edf6] outline-none placeholder:text-[#8b8794]"
+                className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-[#8b8794]"
                 placeholder={searchPlaceholder}
               />
             </div>
@@ -197,7 +195,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-auto bg-[#1c1c22] p-4">
+        <main className="min-h-0 flex-1 overflow-auto bg-background p-4">
           {children}
         </main>
       </div>
@@ -236,7 +234,14 @@ export function WorkbenchPanel({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-xl bg-[#2b2540] p-5", className)}>{children}</div>
+    <div
+      className={cn(
+        "rounded-xl border border-border bg-panel-surface p-5",
+        className,
+      )}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -250,7 +255,7 @@ export function SetupCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-[#34343f] bg-[#24242c] p-6",
+        "rounded-xl border border-border bg-card p-6",
         className,
       )}
     >

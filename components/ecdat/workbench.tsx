@@ -567,8 +567,8 @@ function IngestView({
         ) : null}
         {showPaste ? (
           <>
-            <div className="mt-4 overflow-hidden rounded-lg border border-[#34343f]">
-              <div className="flex items-center justify-between gap-3 border-b border-[#34343f] bg-[#1a1a22] px-3 py-2.5">
+            <div className="mt-4 overflow-hidden rounded-lg border border-border">
+              <div className="flex items-center justify-between gap-3 border-b border-border bg-[#1a1822] px-3 py-2.5">
                 <div className="min-w-0">
                   <p className="text-[13px] font-medium text-white">
                     LLVM IR source
@@ -669,7 +669,7 @@ function CorpusView({
             type="button"
             disabled={loading}
             onClick={() => void onLoad(s.id)}
-            className="group rounded-lg border border-[#34343f] bg-[#24242c] p-4 text-left transition-colors hover:border-[#6c5fc7]/40 hover:bg-[#2a2638]"
+            className="group rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-[#38324d]"
           >
             <div className="flex items-start justify-between gap-2">
               <span className="text-[13px] font-medium text-white">
@@ -778,7 +778,7 @@ function DiscoverView({
               type="button"
               disabled={loading}
               onClick={() => void onLoadSample(s.id)}
-              className="group rounded-lg border border-[#34343f] bg-[#24242c] p-4 text-left transition-colors hover:border-[#6c5fc7]/50 hover:bg-[#2a2638]"
+              className="group rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-[#38324d]"
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="text-[13px] font-medium text-white">
@@ -816,7 +816,7 @@ function DiscoverView({
 
   return (
     <WorkbenchPanel className="flex h-full min-h-0 flex-col p-0">
-      <div className="border-b border-[#34343f] px-5 py-3">
+      <div className="border-b border-border px-5 py-3">
         <div className="flex flex-wrap items-center gap-4 text-[12px] text-[#c4c1d2]">
           <span>
             <strong className="text-white">{report.functionCount}</strong>{" "}
@@ -848,8 +848,8 @@ function DiscoverView({
         </div>
       </div>
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div className="flex w-full shrink-0 flex-col border-b border-[#34343f] lg:w-[360px] lg:border-r lg:border-b-0">
-          <div className="grid grid-cols-3 gap-px border-b border-[#34343f] bg-[#34343f]">
+        <div className="flex w-full shrink-0 flex-col border-b border-border lg:w-[360px] lg:border-r lg:border-b-0">
+          <div className="grid grid-cols-3 gap-px border-b border-border bg-border">
             <MetricCell label="Functions" value={String(report.functionCount)} />
             <MetricCell label="Primitives" value={String(report.findings.length)} />
             <MetricCell
@@ -871,10 +871,10 @@ function DiscoverView({
                       type="button"
                       onClick={() => onSelectFinding(f.id)}
                       className={cn(
-                        "flex w-full gap-3 border-b border-[#34343f] px-4 py-3 text-left transition-colors",
+                        "flex w-full gap-3 border-b border-border px-4 py-3 text-left transition-colors",
                         selectedFinding === f.id
-                          ? "bg-[#6c5fc7]/20"
-                          : "hover:bg-[#24242c]",
+                          ? "bg-primary/20"
+                          : "hover:bg-muted",
                       )}
                     >
                       <SeverityDot severity={f.severity} />
@@ -937,7 +937,7 @@ function FindingDetail({
 }) {
   return (
     <SetupCard className="flex min-h-[520px] flex-col overflow-hidden p-0">
-      <div className="border-b border-[#34343f] px-5 py-4">
+      <div className="border-b border-border px-5 py-4">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-[18px] font-semibold text-white">
             {finding.primitive}
@@ -965,7 +965,7 @@ function FindingDetail({
         <Tabs defaultValue="evidence">
           <TabsList
             variant="line"
-            className="h-9 w-full border-[#34343f] text-[#8b8794]"
+            className="h-9 w-full border-border text-[#8b8794]"
           >
             <TabsTrigger
               value="evidence"
@@ -991,7 +991,7 @@ function FindingDetail({
             {finding.evidence.map((ev, i) => (
               <div
                 key={`${ev.summary}-${i}`}
-                className="rounded-lg border border-[#3d3d48] bg-[#1a1a22] p-4"
+                className="rounded-lg border border-[#3d3d48] bg-[#1a1822] p-4"
               >
                 <p className="text-[11px] font-semibold tracking-wide text-[#8b8794] uppercase">
                   {ev.kind}
@@ -1002,14 +1002,14 @@ function FindingDetail({
                 </p>
                 <p className="mt-2 text-[13px] text-[#e8e6ef]">{ev.summary}</p>
                 {ev.snippet ? (
-                  <pre className="mt-3 overflow-x-auto rounded-md border border-[#34343f] bg-[#12121a] p-3 font-mono text-[11px] leading-relaxed text-[#c4b5fd]">
+                  <pre className="mt-3 overflow-x-auto rounded-md border border-border bg-[#12121a] p-3 font-mono text-[11px] leading-relaxed text-[#c4b5fd]">
                     {ev.snippet}
                   </pre>
                 ) : null}
               </div>
             ))}
             {finding.notes.length ? (
-              <div className="rounded-lg border border-[#3d3d48] bg-[#1a1a22] p-4">
+              <div className="rounded-lg border border-[#3d3d48] bg-[#1a1822] p-4">
                 <div className="flex gap-2">
                   <ShieldAlert className="mt-0.5 size-4 shrink-0 text-[#f5a623]" />
                   <div className="min-w-0">
@@ -1167,7 +1167,7 @@ function InventoryView({
 
       {showExport ? (
         <SetupCard className="overflow-hidden">
-          <div className="border-b border-[#34343f] px-4 py-3">
+          <div className="border-b border-border px-4 py-3">
             <h2 className="text-[15px] font-semibold text-white">
               Cryptographic inventory
             </h2>
@@ -1177,7 +1177,7 @@ function InventoryView({
           </div>
           <ScrollArea className="h-[420px]">
             <table className="w-full text-left text-[12px] text-[#e8e6ef]">
-              <thead className="sticky top-0 bg-[#1a1a22] text-[11px] text-[#8b8794] uppercase">
+              <thead className="sticky top-0 bg-[#1a1822] text-[11px] text-[#8b8794] uppercase">
                 <tr>
                   <th className="px-4 py-2 font-medium">ID</th>
                   <th className="px-4 py-2 font-medium">Primitive</th>
@@ -1190,7 +1190,7 @@ function InventoryView({
                 {inventory.rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="border-t border-[#34343f] hover:bg-[#1a1a22]/60"
+                    className="border-t border-border hover:bg-muted/50"
                   >
                     <td className="px-4 py-2.5 font-mono">{row.id}</td>
                     <td className="px-4 py-2.5">{row.primitive}</td>
@@ -1224,7 +1224,7 @@ function ChannelCard({
   count: number | null;
 }) {
   return (
-    <div className="rounded-lg border border-[#34343f] bg-[#24242c] p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <p className="text-[13px] font-medium text-white">{title}</p>
       <p className="mt-1 text-[12px] text-[#a09aab]">{detail}</p>
       {count != null ? (
@@ -1246,7 +1246,7 @@ function MetricCell({
   warn?: boolean;
 }) {
   return (
-    <div className="bg-[#24242c] px-3 py-2.5">
+    <div className="bg-card px-3 py-2.5">
       <p className="text-[10px] font-medium tracking-wide text-[#8b8794] uppercase">
         {label}
       </p>
@@ -1302,7 +1302,7 @@ function OpcodeBars({ fn }: { fn: FunctionRecord }) {
           className="grid grid-cols-[4.5rem_1fr_2rem] items-center gap-2"
         >
           <span className="font-mono text-[11px] text-[#c4c1d2]">{op}</span>
-          <div className="h-1.5 overflow-hidden rounded-full bg-[#34343f]">
+          <div className="h-1.5 overflow-hidden rounded-full bg-border">
             <div
               className="h-full bg-[#6c5fc7]"
               style={{ width: `${(n / max) * 100}%` }}
