@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   FileCode2,
   Loader2,
   ShieldAlert,
@@ -507,8 +509,15 @@ function IngestView({
   onIrChange: (v: string) => void;
   onAnalyze: () => void;
 }) {
+  const [irExpanded, setIrExpanded] = useState(true);
   const showUpload = section !== "paste";
   const showPaste = section !== "upload";
+  const lineCount = ir ? ir.split("\n").length : 0;
+  const irPreview = ir.trim().split("\n")[0] ?? "";
+
+  useEffect(() => {
+    if (section === "paste" && ir.trim()) setIrExpanded(true);
+  }, [section, ir]);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -540,8 +549,8 @@ function IngestView({
                 : "border-border bg-[#1a1a23] hover:border-primary/40",
             )}
           >
-            <Upload className="size-5 text-muted-foreground" />
-            <span className="text-[13px]">
+            <Upload className="size-5 text-[#8b8794]" />
+            <span className="text-[13px] text-[#c4c1d2]">
               Drop <span className="font-mono">.ll / .o / ELF / PE</span> or
               browse
             </span>
@@ -558,17 +567,54 @@ function IngestView({
         ) : null}
         {showPaste ? (
           <>
-            <Textarea
-              value={ir}
-              onChange={(e) => onIrChange(e.target.value)}
-              placeholder={"; ModuleID = 'module'\ndefine i32 @main() {\n  ret i32 0\n}"}
-              className="mt-4 min-h-48 border-border bg-[#1a1a23] font-mono text-[12px]"
-            />
-            <div className="mt-3 flex items-center justify-between">
-              <span className="font-mono text-[11px] text-muted-foreground">
-                {filename}
-                {ir ? ` · ${(ir.length / 1024).toFixed(1)} KB` : ""}
-              </span>
+            <div className="mt-4 overflow-hidden rounded-lg border border-[#34343f]">
+              <div className="flex items-center justify-between gap-3 border-b border-[#34343f] bg-[#1a1a22] px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-white">
+                    LLVM IR source
+                  </p>
+                  <p className="truncate font-mono text-[11px] text-[#8b8794]">
+                    {filename}
+                    {ir
+                      ? ` · ${lineCount.toLocaleString()} lines · ${(ir.length / 1024).toFixed(1)} KB`
+                      : " · empty"}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="tactile"
+                  onClick={() => setIrExpanded((open) => !open)}
+                >
+                  {irExpanded ? (
+                    <ChevronUp className="size-3.5" />
+                  ) : (
+                    <ChevronDown className="size-3.5" />
+                  )}
+                  {irExpanded ? "Collapse" : "Expand"}
+                </Button>
+              </div>
+              {irExpanded ? (
+                <Textarea
+                  value={ir}
+                  onChange={(e) => onIrChange(e.target.value)}
+                  placeholder={"; ModuleID = 'module'\ndefine i32 @main() {\n  ret i32 0\n}"}
+                  className="max-h-96 min-h-48 rounded-none border-0 bg-[#12121a] font-mono text-[12px] shadow-none focus-visible:ring-0"
+                />
+              ) : (
+                <div className="bg-[#12121a] px-3 py-3">
+                  <p className="truncate font-mono text-[11px] text-[#a09aab]">
+                    {irPreview || "No IR pasted yet."}
+                  </p>
+                  {lineCount > 1 ? (
+                    <p className="mt-1 text-[11px] text-[#8b8794]">
+                      + {lineCount - 1} more lines hidden
+                    </p>
+                  ) : null}
+                </div>
+              )}
+            </div>
+            <div className="mt-3 flex items-center justify-end">
               <Button onClick={onAnalyze} disabled={loading || !ir.trim()}>
                 {loading ? <Loader2 className="animate-spin" /> : <FileCode2 />}
                 Analyze IR
