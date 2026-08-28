@@ -2,84 +2,185 @@
 
 import type { ReactNode } from "react";
 import {
-  BookOpen,
-  Database,
-  FileStack,
+  ChevronDown,
+  LayoutDashboard,
+  LineChart,
+  Megaphone,
+  Monitor,
+  Play,
   Radar,
-  Shield,
+  Radio,
+  Search,
+  Settings,
+  Sparkles,
   Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type AppView = "discover" | "ingest" | "corpus" | "inventory";
 
-const NAV: { id: AppView; label: string; icon: typeof Radar }[] = [
-  { id: "discover", label: "Discover", icon: Radar },
-  { id: "ingest", label: "Ingest", icon: Upload },
-  { id: "corpus", label: "Corpus", icon: Database },
-  { id: "inventory", label: "Inventory", icon: FileStack },
+const ICON_NAV = [
+  { id: "discover" as const, icon: Radar, label: "Discover" },
+  { id: "ingest" as const, icon: Upload, label: "Ingest" },
+  { id: "corpus" as const, icon: LayoutDashboard, label: "Corpus" },
+  { id: "inventory" as const, icon: LineChart, label: "Inventory" },
 ];
 
 export function AppShell({
   view,
   onView,
-  topbar,
-  sidebar,
+  secondaryTitle,
+  secondaryItems,
+  secondaryActive,
+  onSecondarySelect,
+  breadcrumb,
+  actions,
   children,
 }: {
   view: AppView;
   onView: (v: AppView) => void;
-  topbar: ReactNode;
-  sidebar?: ReactNode;
+  secondaryTitle: string;
+  secondaryItems: { id: string; label: string }[];
+  secondaryActive: string;
+  onSecondarySelect: (id: string) => void;
+  breadcrumb: ReactNode;
+  actions?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <div className="flex h-screen min-h-0 bg-background">
-      {/* Primary icon rail */}
-      <aside className="flex w-14 shrink-0 flex-col items-center border-r border-border bg-[#12121a] py-3">
-        <div className="mb-4 flex size-9 items-center justify-center rounded-md bg-primary/20 text-primary">
-          <Shield className="size-5" />
+    <div className="flex h-screen min-h-0 bg-[#1c1c22] text-[#f0edf6]">
+      <aside className="flex w-[56px] shrink-0 flex-col items-center border-r border-[#2a2a32] bg-[#121217] py-2">
+        <div className="mb-3 flex size-9 items-center justify-center">
+          <div className="flex size-8 items-center justify-center rounded-md bg-[#6c5fc7] text-[11px] font-bold text-white">
+            E
+          </div>
         </div>
-        <nav className="flex flex-1 flex-col gap-1">
-          {NAV.map(({ id, label, icon: Icon }) => (
+        <nav className="flex flex-col gap-0.5">
+          {ICON_NAV.map(({ id, icon: Icon, label }) => (
             <button
               key={id}
               type="button"
               title={label}
               onClick={() => onView(id)}
               className={cn(
-                "flex size-10 items-center justify-center rounded-md transition-colors",
+                "flex size-10 items-center justify-center rounded-lg transition-colors",
                 view === id
-                  ? "bg-primary/20 text-primary"
-                  : "text-muted-foreground hover:bg-[#1e1e29] hover:text-foreground",
+                  ? "bg-[#6c5fc7] text-white"
+                  : "text-[#8b8794] hover:bg-[#1c1c22] hover:text-[#f0edf6]",
               )}
             >
-              <Icon className="size-[18px]" strokeWidth={1.75} />
+              <Icon className="size-[18px]" strokeWidth={1.5} />
             </button>
           ))}
         </nav>
-        <a
-          href="/pitch/sih-deck.html"
-          target="_blank"
-          rel="noreferrer"
-          title="Pitch deck"
-          className="mt-auto flex size-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[#1e1e29] hover:text-foreground"
-        >
-          <BookOpen className="size-[18px]" strokeWidth={1.75} />
-        </a>
+        <div className="mt-auto flex flex-col gap-1 pb-2">
+          <button
+            type="button"
+            className="flex size-10 items-center justify-center rounded-lg text-[#8b8794] hover:bg-[#1c1c22] hover:text-[#f0edf6]"
+            title="Monitors"
+          >
+            <Monitor className="size-[18px]" strokeWidth={1.5} />
+          </button>
+          <button
+            type="button"
+            className="flex size-10 items-center justify-center rounded-lg text-[#8b8794] hover:bg-[#1c1c22] hover:text-[#f0edf6]"
+            title="Settings"
+          >
+            <Settings className="size-[18px]" strokeWidth={1.5} />
+          </button>
+          <div className="mx-auto mt-1 flex size-8 items-center justify-center rounded-full bg-[#6c5fc7] text-[10px] font-semibold text-white">
+            EC
+          </div>
+        </div>
       </aside>
 
-      {/* Secondary sidebar */}
-      {sidebar ? (
-        <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-[#12121a]">
-          {sidebar}
-        </aside>
-      ) : null}
+      <aside className="flex w-[200px] shrink-0 flex-col border-r border-[#2a2a32] bg-[#121217]">
+        <div className="px-4 pt-4 pb-2">
+          <p className="text-[11px] font-semibold tracking-[0.06em] text-[#8b8794] uppercase">
+            {secondaryTitle}
+          </p>
+        </div>
+        <nav className="flex flex-col gap-0.5 px-2">
+          {secondaryItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onSecondarySelect(item.id)}
+              className={cn(
+                "rounded-lg px-3 py-2 text-left text-[13px] transition-colors",
+                secondaryActive === item.id
+                  ? "bg-[#6c5fc7] font-medium text-white"
+                  : "text-[#c4c1d2] hover:bg-[#1c1c22] hover:text-white",
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div className="mt-auto border-t border-[#2a2a32] p-3">
+          <p className="text-[11px] font-semibold tracking-[0.06em] text-[#8b8794] uppercase">
+            Export
+          </p>
+          <button
+            type="button"
+            className="mt-2 w-full rounded-lg px-3 py-2 text-left text-[13px] text-[#c4c1d2] hover:bg-[#1c1c22]"
+          >
+            Inventory report
+          </button>
+        </div>
+      </aside>
 
-      {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {topbar}
-        <main className="min-h-0 flex-1 overflow-auto bg-background">
+        <header className="shrink-0 border-b border-[#2a2a32] bg-[#1c1c22] px-4 py-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="mr-2 text-[13px] text-[#c4c1d2]">{breadcrumb}</div>
+            <FilterDropdown label="llvm-ir" />
+            <FilterDropdown label="All artifacts" />
+            <FilterDropdown label="14D" />
+            <div className="flex min-w-[180px] flex-1 items-center gap-2 rounded-[6px] border border-[#3a3a46] border-b-[3px] border-b-[#121218] bg-[#2a2a32] px-3 py-1.5">
+              <Search className="size-3.5 shrink-0 text-[#8b8794]" />
+              <span className="rounded-md bg-[#3d3560] px-2 py-0.5 text-[12px] text-[#e2d9ff]">
+                is unresolved
+              </span>
+              <input
+                className="min-w-0 flex-1 bg-transparent text-[13px] text-[#f0edf6] outline-none placeholder:text-[#8b8794]"
+                placeholder="Search findings…"
+                readOnly
+              />
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <button type="button" className="btn-tactile-icon" title="Replay demo">
+                <Play className="size-3.5" />
+              </button>
+              <button type="button" className="btn-tactile h-8 px-2.5">
+                <Sparkles className="size-3.5 text-[#a78bfa]" />
+                Ask ECDAT
+              </button>
+              <button type="button" className="btn-tactile-icon" title="Search">
+                <Search className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                className="inline-flex size-8 items-center justify-center text-[#c4c1d2] hover:text-white"
+                title="Announcements"
+              >
+                <Megaphone className="size-4" />
+              </button>
+              <button type="button" className="btn-tactile h-8 min-w-[140px] justify-between px-2.5">
+                <span>Recommended</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="flex size-5 items-center justify-center rounded bg-[#2d8f4e] text-white">
+                    <Radio className="size-3" />
+                  </span>
+                  <ChevronDown className="size-3.5 text-[#8b8794]" />
+                </span>
+              </button>
+              {actions}
+            </div>
+          </div>
+        </header>
+
+        <main className="min-h-0 flex-1 overflow-auto bg-[#1c1c22] p-4">
           {children}
         </main>
       </div>
@@ -87,123 +188,38 @@ export function AppShell({
   );
 }
 
-export function SecondaryNav({
-  title,
-  items,
-  active,
-  onSelect,
-}: {
-  title: string;
-  items: { id: string; label: string; count?: number }[];
-  active: string;
-  onSelect: (id: string) => void;
-}) {
+function FilterDropdown({ label }: { label: string }) {
   return (
-    <>
-      <div className="border-b border-border px-4 py-3">
-        <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-          {title}
-        </p>
-      </div>
-      <nav className="flex flex-col gap-0.5 p-2">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onSelect(item.id)}
-            className={cn(
-              "flex items-center justify-between rounded-md px-3 py-2 text-left text-[13px] transition-colors",
-              active === item.id
-                ? "bg-primary/15 font-medium text-foreground"
-                : "text-muted-foreground hover:bg-[#1e1e29] hover:text-foreground",
-            )}
-          >
-            <span>{item.label}</span>
-            {item.count != null ? (
-              <span className="font-mono text-[11px] text-muted-foreground">
-                {item.count}
-              </span>
-            ) : null}
-          </button>
-        ))}
-      </nav>
-    </>
-  );
-}
-
-export function TopBar({
-  title,
-  subtitle,
-  actions,
-  filters,
-}: {
-  title: string;
-  subtitle?: string;
-  actions?: ReactNode;
-  filters?: ReactNode;
-}) {
-  return (
-    <header className="shrink-0 border-b border-border bg-[#1e1e29]">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
-        <div className="min-w-0">
-          <h1 className="truncate text-[15px] font-semibold text-foreground">
-            {title}
-          </h1>
-          {subtitle ? (
-            <p className="truncate text-[12px] text-muted-foreground">
-              {subtitle}
-            </p>
-          ) : null}
-        </div>
-        {actions ? (
-          <div className="flex flex-wrap items-center gap-2">{actions}</div>
-        ) : null}
-      </div>
-      {filters ? (
-        <div className="flex flex-wrap items-center gap-2 border-t border-border px-5 py-2">
-          {filters}
-        </div>
-      ) : null}
-    </header>
-  );
-}
-
-export function FilterPill({
-  active,
-  onClick,
-  children,
-}: {
-  active?: boolean;
-  onClick?: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors",
-        active
-          ? "border-primary/50 bg-primary/15 text-foreground"
-          : "border-border bg-[#1a1a23] text-muted-foreground hover:border-[#3d3d4a] hover:text-foreground",
-      )}
-    >
-      {children}
+    <button type="button" className="btn-tactile h-8 px-2.5">
+      {label}
+      <ChevronDown className="size-3.5 text-[#8b8794]" />
     </button>
   );
 }
 
-export function Panel({
-  className,
+export function WorkbenchPanel({
   children,
+  className,
 }: {
-  className?: string;
   children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-xl bg-[#2b2540] p-5", className)}>{children}</div>
+  );
+}
+
+export function SetupCard({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
 }) {
   return (
     <div
       className={cn(
-        "rounded-lg border border-border bg-[#1e1e29]",
+        "rounded-xl border border-[#34343f] bg-[#24242c] p-6",
         className,
       )}
     >
@@ -212,25 +228,31 @@ export function Panel({
   );
 }
 
-export function EmptyState({
-  title,
-  description,
-  action,
+export function PreviewCard({ children }: { children: ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-[#e0e0e6] bg-white text-[#1c1c22] shadow-sm">
+      {children}
+    </div>
+  );
+}
+
+export function StepCircle({
+  n,
+  active,
 }: {
-  title: string;
-  description: string;
-  action?: ReactNode;
+  n: number;
+  active?: boolean;
 }) {
   return (
-    <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-12 text-center">
-      <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary">
-        <Radar className="size-6" />
-      </div>
-      <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-      <p className="mt-2 max-w-md text-[13px] leading-relaxed text-muted-foreground">
-        {description}
-      </p>
-      {action ? <div className="mt-6">{action}</div> : null}
-    </div>
+    <span
+      className={cn(
+        "flex size-7 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold",
+        active
+          ? "bg-[#6c5fc7] text-white"
+          : "border border-[#4a4a55] bg-[#1c1c22] text-[#8b8794]",
+      )}
+    >
+      {n}
+    </span>
   );
 }
