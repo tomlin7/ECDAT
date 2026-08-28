@@ -1,7 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
+  ChevronsLeft,
+  ChevronsRight,
   LayoutDashboard,
   LineChart,
   Radar,
@@ -52,87 +54,131 @@ export function AppShell({
   footerAction?: { label: string; onClick: () => void; disabled?: boolean };
   children: ReactNode;
 }) {
+  const [navCollapsed, setNavCollapsed] = useState(false);
+
   return (
     <div className="flex h-screen min-h-0 bg-[#1c1c22] text-[#f0edf6]">
-      <aside className="flex w-[56px] shrink-0 flex-col items-center border-r border-[#2a2a32] bg-[#121217] py-2">
-        <div className="mb-3 flex size-9 items-center justify-center">
-          <div className="flex size-8 items-center justify-center rounded-md bg-[#6c5fc7] text-[11px] font-bold text-white">
-            E
-          </div>
+      {/* Primary actionbar */}
+      <aside className="flex w-[74px] shrink-0 flex-col items-center border-r border-[#2a2a32] bg-[#1a1a1f] py-3">
+        <div className="mb-5 flex size-10 items-center justify-center rounded-lg bg-[#6c5fc7] text-sm font-bold text-white">
+          E
         </div>
-        <nav className="flex flex-col gap-0.5">
-          {ICON_NAV.map(({ id, icon: Icon, label }) => (
-            <button
-              key={id}
-              type="button"
-              title={label}
-              onClick={() => onView(id)}
-              className={cn(
-                "flex size-10 items-center justify-center rounded-lg transition-colors",
-                view === id
-                  ? "bg-[#6c5fc7] text-white"
-                  : "text-[#8b8794] hover:bg-[#1c1c22] hover:text-[#f0edf6]",
-              )}
-            >
-              <Icon className="size-[18px]" strokeWidth={1.5} />
-            </button>
-          ))}
+
+        <nav className="flex w-full flex-col items-center gap-1">
+          {ICON_NAV.map(({ id, icon: Icon, label }) => {
+            const active = view === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onView(id)}
+                className="group flex w-full flex-col items-center gap-0.5 px-1 py-0.5"
+              >
+                <span
+                  className={cn(
+                    "flex size-10 items-center justify-center rounded-lg border-2 transition-colors",
+                    active
+                      ? "border-[#7c6cf0] text-white"
+                      : "border-transparent text-[#9b97a6] group-hover:text-[#e8e6ef]",
+                  )}
+                >
+                  <Icon className="size-[18px]" strokeWidth={1.75} />
+                </span>
+                <span
+                  className={cn(
+                    "max-w-[68px] truncate text-center text-[10px] leading-tight",
+                    active
+                      ? "font-medium text-white"
+                      : "text-[#9b97a6] group-hover:text-[#e8e6ef]",
+                  )}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          })}
         </nav>
-        <div className="mt-auto pb-2">
-          <div className="mx-auto flex size-8 items-center justify-center rounded-full bg-[#6c5fc7] text-[10px] font-semibold text-white">
+
+        <div className="mt-auto flex flex-col items-center gap-3 pb-1">
+          <div className="flex size-9 items-center justify-center rounded-md bg-[#e9626a] text-[10px] font-bold text-[#1a1a1f]">
             EC
           </div>
         </div>
       </aside>
 
-      <aside className="flex w-[200px] shrink-0 flex-col border-r border-[#2a2a32] bg-[#121217]">
-        <div className="px-4 pt-4 pb-2">
-          <p className="text-[11px] font-semibold tracking-[0.06em] text-[#8b8794] uppercase">
-            {secondaryTitle}
-          </p>
-        </div>
-        <nav className="flex flex-col gap-0.5 px-2">
-          {secondaryItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onSecondarySelect(item.id)}
-              className={cn(
-                "flex items-center justify-between rounded-lg px-3 py-2 text-left text-[13px] transition-colors",
-                secondaryActive === item.id
-                  ? "bg-[#6c5fc7] font-medium text-white"
-                  : "text-[#c4c1d2] hover:bg-[#1c1c22] hover:text-white",
-              )}
-            >
-              <span>{item.label}</span>
-              {item.count != null ? (
-                <span
-                  className={cn(
-                    "font-mono text-[11px]",
-                    secondaryActive === item.id
-                      ? "text-white/80"
-                      : "text-[#8b8794]",
-                  )}
-                >
-                  {item.count}
-                </span>
-              ) : null}
-            </button>
-          ))}
-        </nav>
-        {footerAction ? (
-          <div className="mt-auto border-t border-[#2a2a32] p-3">
+      {/* Secondary navigation panel */}
+      {!navCollapsed ? (
+        <aside className="flex w-[220px] shrink-0 flex-col border-r border-[#2a2a32] bg-[#1a1a1f]">
+          <div className="flex items-center justify-between px-3 pt-3 pb-2">
+            <span className="text-[15px] font-semibold text-white">
+              {secondaryTitle}
+            </span>
             <button
               type="button"
-              disabled={footerAction.disabled}
-              onClick={footerAction.onClick}
-              className="w-full rounded-lg px-3 py-2 text-left text-[13px] text-[#c4c1d2] hover:bg-[#1c1c22] disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() => setNavCollapsed(true)}
+              className="flex size-7 items-center justify-center rounded-md border border-transparent text-[#8b8794] transition-colors hover:border-[#3d3d48] hover:text-white"
+              title="Collapse sidebar"
             >
-              {footerAction.label}
+              <ChevronsLeft className="size-4" />
             </button>
           </div>
-        ) : null}
-      </aside>
+
+          <nav className="flex flex-col gap-0.5 px-2">
+            {secondaryItems.map((item) => {
+              const active = secondaryActive === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onSecondarySelect(item.id)}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-[13px] transition-colors",
+                    active
+                      ? "bg-[#6c5fc7] font-medium text-white"
+                      : "border border-transparent text-[#c4c1d2] hover:border-[#3d3d48] hover:text-white",
+                  )}
+                >
+                  <span>{item.label}</span>
+                  {item.count != null ? (
+                    <span
+                      className={cn(
+                        "font-mono text-[11px]",
+                        active ? "text-white/85" : "text-[#8b8794]",
+                      )}
+                    >
+                      {item.count}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </nav>
+
+          {footerAction ? (
+            <div className="mt-auto border-t border-[#2a2a32] p-3">
+              <button
+                type="button"
+                disabled={footerAction.disabled}
+                onClick={footerAction.onClick}
+                className="w-full rounded-md border border-transparent px-3 py-1.5 text-left text-[13px] text-[#c4c1d2] transition-colors hover:border-[#3d3d48] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {footerAction.label}
+              </button>
+            </div>
+          ) : null}
+        </aside>
+      ) : (
+        <div className="flex w-10 shrink-0 flex-col border-r border-[#2a2a32] bg-[#1a1a1f]">
+          <button
+            type="button"
+            onClick={() => setNavCollapsed(false)}
+            className="mx-auto mt-3 flex size-7 items-center justify-center rounded-md border border-transparent text-[#8b8794] transition-colors hover:border-[#3d3d48] hover:text-white"
+            title="Expand sidebar"
+          >
+            <ChevronsRight className="size-4" />
+          </button>
+        </div>
+      )}
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="shrink-0 border-b border-[#2a2a32] bg-[#1c1c22] px-4 py-2.5">
