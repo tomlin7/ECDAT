@@ -216,11 +216,3 @@ export function SetupCard({
     </div>
   );
 }
-
-export function PreviewCard({ children }: { children: ReactNode }) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-[#e0e0e6] bg-white text-[#1c1c22] shadow-sm">
-      {children}
-    </div>
-  );
-}

@@ -12,7 +12,6 @@ import {
 import {
   AppShell,
   FilterChip,
-  PreviewCard,
   SetupCard,
   WorkbenchPanel,
   type AppView,
@@ -624,25 +623,25 @@ function CorpusView({
             type="button"
             disabled={loading}
             onClick={() => void onLoad(s.id)}
-            className="group rounded-lg border border-border bg-[#1e1e29] p-4 text-left transition-colors hover:border-primary/40 hover:bg-[#24242f]"
+            className="group rounded-lg border border-[#34343f] bg-[#24242c] p-4 text-left transition-colors hover:border-[#6c5fc7]/40 hover:bg-[#2a2638]"
           >
             <div className="flex items-start justify-between gap-2">
-              <span className="text-[13px] font-medium text-foreground">
+              <span className="text-[13px] font-medium text-white">
                 {s.title}
               </span>
               <Badge variant="outline" className="shrink-0">
                 {s.format}
               </Badge>
             </div>
-            <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-[12px] leading-relaxed text-[#a09aab]">
               {s.blurb}
             </p>
-            <p className="mt-2 font-mono text-[10px] text-muted-foreground">
+            <p className="mt-2 font-mono text-[10px] text-[#8b8794]">
               {s.expected.length
                 ? s.expected.join(" · ")
                 : "negative control"}
             </p>
-            <ChevronRight className="mt-2 size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+            <ChevronRight className="mt-2 size-4 text-[#8b8794] opacity-0 transition-opacity group-hover:opacity-100" />
           </button>
         ))}
       </div>
@@ -862,16 +861,12 @@ function DiscoverView({
 
         <div className="min-w-0 flex-1 overflow-auto p-5">
           {activeFinding ? (
-            <PreviewCard>
-              <div className="p-4">
-                <FindingDetail
-                  report={report}
-                  finding={activeFinding}
-                  activeFn={activeFn}
-                  onSelectFn={onSelectFn}
-                />
-              </div>
-            </PreviewCard>
+            <FindingDetail
+              report={report}
+              finding={activeFinding}
+              activeFn={activeFn}
+              onSelectFn={onSelectFn}
+            />
           ) : (
             <p className="text-[13px] text-[#c4c1d2]">
               Select a finding from the feed.
@@ -895,21 +890,23 @@ function FindingDetail({
   onSelectFn: (name: string) => void;
 }) {
   return (
-    <div className="space-y-4">
-      <div>
+    <SetupCard className="flex min-h-[520px] flex-col overflow-hidden p-0">
+      <div className="border-b border-[#34343f] px-5 py-4">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-lg font-semibold">{finding.primitive}</h2>
+          <h2 className="text-[18px] font-semibold text-white">
+            {finding.primitive}
+          </h2>
           <SeverityBadge severity={finding.severity} />
           <SourceBadge source={finding.source} />
-          <span className="font-mono text-[12px] text-muted-foreground">
+          <span className="font-mono text-[12px] text-[#8b8794]">
             {finding.id} · {(finding.confidence * 100).toFixed(0)}% confidence
           </span>
         </div>
-        <p className="mt-2 text-[13px] text-muted-foreground">
+        <p className="mt-2 text-[13px] leading-relaxed text-[#c4c1d2]">
           {finding.rationale}
         </p>
         {report.targetTriple ? (
-          <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+          <p className="mt-2 font-mono text-[11px] text-[#8b8794]">
             {report.targetTriple}
             {report.ml
               ? ` · holdout ${(report.ml.holdoutAccuracy * 100).toFixed(0)}%`
@@ -918,84 +915,112 @@ function FindingDetail({
         ) : null}
       </div>
 
-      <Tabs defaultValue="evidence">
-        <TabsList variant="line">
-          <TabsTrigger value="evidence">Evidence</TabsTrigger>
-          <TabsTrigger value="ir">Function IR</TabsTrigger>
-          <TabsTrigger value="mix">Opcode mix</TabsTrigger>
-        </TabsList>
-        <TabsContent value="evidence" className="mt-4 space-y-3">
-          {finding.evidence.map((ev, i) => (
-            <SetupCard key={`${ev.summary}-${i}`} className="p-4">
-              <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                {ev.kind}
-                {ev.line ? ` · line ${ev.line}` : ""}
-                {ev.offset != null
-                  ? ` · offset 0x${ev.offset.toString(16)}`
-                  : ""}
-              </p>
-              <p className="mt-2 text-[13px]">{ev.summary}</p>
-              {ev.snippet ? (
-                <pre className="mt-2 overflow-x-auto rounded-md border border-border bg-[#12121a] p-3 font-mono text-[11px] text-[#c4b5fd]">
-                  {ev.snippet}
-                </pre>
-              ) : null}
-            </SetupCard>
-          ))}
-          {finding.notes.length ? (
-            <Alert>
-              <ShieldAlert />
-              <AlertTitle>Posture notes</AlertTitle>
-              <AlertDescription>
-                <ul className="list-disc space-y-1 pl-4">
-                  {finding.notes.map((n) => (
-                    <li key={n}>{n}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          ) : null}
-        </TabsContent>
-        <TabsContent value="ir" className="mt-4 space-y-2">
-          {report.functions.length ? (
-            <div className="flex flex-wrap gap-1">
-              {report.functions.map((fn) => (
-                <Button
-                  key={fn.name}
-                  type="button"
-                  size="xs"
-                  variant={activeFn?.name === fn.name ? "default" : "outline"}
-                  onClick={() => onSelectFn(fn.name)}
-                  className="font-mono"
-                >
-                  @{fn.name}
-                </Button>
-              ))}
-            </div>
-          ) : null}
-          {activeFn ? (
-            <ScrollArea className="h-80 rounded-md border border-border bg-[#12121a]">
-              <pre className="p-4 font-mono text-[11px] leading-relaxed text-[#c4b5fd]">
-                {activeFn.ir}
-              </pre>
-            </ScrollArea>
-          ) : (
-            <p className="text-[13px] text-muted-foreground">
-              No function selected.
-            </p>
-          )}
-        </TabsContent>
-        <TabsContent value="mix" className="mt-4">
-          {activeFn ? (
-            <OpcodeBars fn={activeFn} />
-          ) : (
-            <p className="text-[13px] text-muted-foreground">
-              No function selected.
-            </p>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+      <div className="flex-1 overflow-auto px-5 py-4">
+        <Tabs defaultValue="evidence">
+          <TabsList
+            variant="line"
+            className="h-9 w-full border-[#34343f] text-[#8b8794]"
+          >
+            <TabsTrigger
+              value="evidence"
+              className="data-active:border-[#6c5fc7] data-active:text-white"
+            >
+              Evidence
+            </TabsTrigger>
+            <TabsTrigger
+              value="ir"
+              className="data-active:border-[#6c5fc7] data-active:text-white"
+            >
+              Function IR
+            </TabsTrigger>
+            <TabsTrigger
+              value="mix"
+              className="data-active:border-[#6c5fc7] data-active:text-white"
+            >
+              Opcode mix
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="evidence" className="mt-4 space-y-3">
+            {finding.evidence.map((ev, i) => (
+              <div
+                key={`${ev.summary}-${i}`}
+                className="rounded-lg border border-[#3d3d48] bg-[#1a1a22] p-4"
+              >
+                <p className="text-[11px] font-semibold tracking-wide text-[#8b8794] uppercase">
+                  {ev.kind}
+                  {ev.line ? ` · line ${ev.line}` : ""}
+                  {ev.offset != null
+                    ? ` · offset 0x${ev.offset.toString(16)}`
+                    : ""}
+                </p>
+                <p className="mt-2 text-[13px] text-[#e8e6ef]">{ev.summary}</p>
+                {ev.snippet ? (
+                  <pre className="mt-3 overflow-x-auto rounded-md border border-[#34343f] bg-[#12121a] p-3 font-mono text-[11px] leading-relaxed text-[#c4b5fd]">
+                    {ev.snippet}
+                  </pre>
+                ) : null}
+              </div>
+            ))}
+            {finding.notes.length ? (
+              <div className="rounded-lg border border-[#3d3d48] bg-[#1a1a22] p-4">
+                <div className="flex gap-2">
+                  <ShieldAlert className="mt-0.5 size-4 shrink-0 text-[#f5a623]" />
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-white">
+                      Posture notes
+                    </p>
+                    <ul className="mt-2 list-disc space-y-1.5 pl-4 text-[13px] text-[#c4c1d2]">
+                      {finding.notes.map((n) => (
+                        <li key={n}>{n}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="ir" className="mt-4 space-y-3">
+            {report.functions.length ? (
+              <div className="flex flex-wrap gap-1.5">
+                {report.functions.map((fn) => (
+                  <Button
+                    key={fn.name}
+                    type="button"
+                    size="xs"
+                    variant={activeFn?.name === fn.name ? "default" : "tactile"}
+                    onClick={() => onSelectFn(fn.name)}
+                    className="font-mono"
+                  >
+                    @{fn.name}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+            {activeFn ? (
+              <div className="overflow-hidden rounded-lg border border-[#3d3d48] bg-[#12121a]">
+                <ScrollArea className="h-80">
+                  <pre className="p-4 font-mono text-[11px] leading-relaxed text-[#c4b5fd]">
+                    {activeFn.ir}
+                  </pre>
+                </ScrollArea>
+              </div>
+            ) : (
+              <p className="text-[13px] text-[#a09aab]">No function selected.</p>
+            )}
+          </TabsContent>
+
+          <TabsContent value="mix" className="mt-4">
+            {activeFn ? (
+              <OpcodeBars fn={activeFn} />
+            ) : (
+              <p className="text-[13px] text-[#a09aab]">No function selected.</p>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </SetupCard>
   );
 }
 
@@ -1044,10 +1069,10 @@ function InventoryView({
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
       {showMetadata ? (
         <SetupCard className="p-5">
-          <h2 className="text-[15px] font-semibold">Asset metadata</h2>
+          <h2 className="text-[15px] font-semibold text-white">Asset metadata</h2>
           <div className="mt-4 space-y-3">
             <label className="block space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground uppercase">
+              <span className="text-[11px] font-medium text-[#8b8794] uppercase">
                 Asset ID
               </span>
               <Input
@@ -1057,7 +1082,7 @@ function InventoryView({
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground uppercase">
+              <span className="text-[11px] font-medium text-[#8b8794] uppercase">
                 Business unit
               </span>
               <Input
@@ -1066,7 +1091,7 @@ function InventoryView({
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-[11px] font-medium text-muted-foreground uppercase">
+              <span className="text-[11px] font-medium text-[#8b8794] uppercase">
                 Org site
               </span>
               <Input
@@ -1096,15 +1121,17 @@ function InventoryView({
 
       {showExport ? (
         <SetupCard className="overflow-hidden">
-          <div className="border-b border-border px-4 py-3">
-            <h2 className="text-[15px] font-semibold">Cryptographic inventory</h2>
-            <p className="text-[12px] text-muted-foreground">
+          <div className="border-b border-[#34343f] px-4 py-3">
+            <h2 className="text-[15px] font-semibold text-white">
+              Cryptographic inventory
+            </h2>
+            <p className="text-[12px] text-[#a09aab]">
               {inventory.primitiveCount} primitives · {inventory.weakCount} weak
             </p>
           </div>
           <ScrollArea className="h-[420px]">
-            <table className="w-full text-left text-[12px]">
-              <thead className="sticky top-0 bg-[#24242f] text-[11px] text-muted-foreground uppercase">
+            <table className="w-full text-left text-[12px] text-[#e8e6ef]">
+              <thead className="sticky top-0 bg-[#1a1a22] text-[11px] text-[#8b8794] uppercase">
                 <tr>
                   <th className="px-4 py-2 font-medium">ID</th>
                   <th className="px-4 py-2 font-medium">Primitive</th>
@@ -1117,7 +1144,7 @@ function InventoryView({
                 {inventory.rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="border-t border-border hover:bg-[#24242f]/50"
+                    className="border-t border-[#34343f] hover:bg-[#1a1a22]/60"
                   >
                     <td className="px-4 py-2.5 font-mono">{row.id}</td>
                     <td className="px-4 py-2.5">{row.primitive}</td>
@@ -1127,7 +1154,7 @@ function InventoryView({
                     <td className="px-4 py-2.5 font-mono">
                       {(row.confidence * 100).toFixed(0)}%
                     </td>
-                    <td className="max-w-[200px] truncate px-4 py-2.5 font-mono text-muted-foreground">
+                    <td className="max-w-[200px] truncate px-4 py-2.5 font-mono text-[#a09aab]">
                       {row.locations.slice(0, 2).join(" · ")}
                     </td>
                   </tr>
@@ -1173,14 +1200,14 @@ function MetricCell({
   warn?: boolean;
 }) {
   return (
-    <div className="bg-[#1e1e29] px-3 py-2.5">
-      <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+    <div className="bg-[#24242c] px-3 py-2.5">
+      <p className="text-[10px] font-medium tracking-wide text-[#8b8794] uppercase">
         {label}
       </p>
       <p
         className={cn(
           "mt-0.5 font-mono text-lg",
-          warn ? "text-[#f5a623]" : "text-foreground",
+          warn ? "text-[#f5a623]" : "text-white",
         )}
       >
         {value}
@@ -1218,7 +1245,7 @@ function OpcodeBars({ fn }: { fn: FunctionRecord }) {
   const max = Math.max(1, ...entries.map(([, n]) => n));
   if (!entries.length) {
     return (
-      <p className="text-[13px] text-muted-foreground">No counted opcodes.</p>
+      <p className="text-[13px] text-[#a09aab]">No counted opcodes.</p>
     );
   }
   return (
@@ -1228,19 +1255,19 @@ function OpcodeBars({ fn }: { fn: FunctionRecord }) {
           key={op}
           className="grid grid-cols-[4.5rem_1fr_2rem] items-center gap-2"
         >
-          <span className="font-mono text-[11px]">{op}</span>
-          <div className="h-1.5 overflow-hidden rounded-full bg-[#2a2a35]">
+          <span className="font-mono text-[11px] text-[#c4c1d2]">{op}</span>
+          <div className="h-1.5 overflow-hidden rounded-full bg-[#34343f]">
             <div
-              className="h-full bg-primary"
+              className="h-full bg-[#6c5fc7]"
               style={{ width: `${(n / max) * 100}%` }}
             />
           </div>
-          <span className="font-mono text-[11px] text-muted-foreground">
+          <span className="font-mono text-[11px] text-[#8b8794]">
             {n}
           </span>
         </li>
       ))}
-      <li className="pt-1 text-[11px] text-muted-foreground">
+      <li className="pt-1 text-[11px] text-[#8b8794]">
         bitwise density {fn.bitwiseDensity.toFixed(2)} · {fn.instructionCount}{" "}
         inst
       </li>
