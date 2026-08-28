@@ -125,11 +125,19 @@
   }
 
   .btn-tactile-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-[6px] border-0 border-t border-white/10 bg-[#584b9f] text-[13px] font-medium text-[#cfc8ea] shadow-[0_2px_0_0_#2d2558] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#6355ad] active:translate-y-0.5 active:shadow-none;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-[6px] border-0 border-t border-white/20 bg-[#7553ff] text-[13px] font-semibold text-white shadow-[0_3px_0_0_#452fa8] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#8368ff] active:translate-y-0.5 active:shadow-none disabled:opacity-45;
   }
 
   .btn-tactile-icon {
     @apply inline-flex size-8 shrink-0 items-center justify-center rounded-[6px] border-0 border-t border-white/10 bg-[#211d24] p-0 text-white shadow-[0_2px_0_0_#0a0a0c] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#2a2630] active:translate-y-0.5 active:shadow-none;
+  }
+
+  .btn-tactile-logo {
+    @apply inline-flex shrink-0 items-center justify-center rounded-lg border-0 border-t border-white/20 bg-[#7553ff] font-bold text-white shadow-[0_3px_0_0_#452fa8] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#8368ff] active:translate-y-0.5 active:shadow-none;
+  }
+
+  .btn-tactile-logo-accent {
+    @apply inline-flex shrink-0 items-center justify-center rounded-lg border-0 border-t border-white/15 bg-[#e9626a] font-bold text-[#1a1a1f] shadow-[0_3px_0_0_#a83d45] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#f06f77] active:translate-y-0.5 active:shadow-none;
   }
 
   .surface-tactile {

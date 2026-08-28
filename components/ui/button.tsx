@@ -8,7 +8,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "btn-tactile-primary",
+        default:
+          "btn-tactile-primary font-semibold text-white",
         tactile: "btn-tactile",
         outline: "btn-tactile text-foreground",
         secondary: "btn-tactile bg-[#2c2c35] text-secondary-foreground",

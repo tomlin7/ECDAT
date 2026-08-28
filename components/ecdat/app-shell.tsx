@@ -60,9 +60,7 @@ export function AppShell({
     <div className="flex h-screen min-h-0 bg-[#1c1c22] text-[#f0edf6]">
       {/* Primary actionbar */}
       <aside className="flex w-[74px] shrink-0 flex-col items-center border-r border-[#2a2a32] bg-[#1a1a1f] py-3">
-        <div className="mb-5 flex size-10 items-center justify-center rounded-lg bg-[#6c5fc7] text-sm font-bold text-white">
-          E
-        </div>
+        <div className="btn-tactile-logo mb-5 size-10 text-sm">E</div>
 
         <nav className="flex w-full flex-col items-center gap-1">
           {ICON_NAV.map(({ id, icon: Icon, label }) => {
@@ -100,9 +98,7 @@ export function AppShell({
         </nav>
 
         <div className="mt-auto flex flex-col items-center gap-3 pb-1">
-          <div className="flex size-9 items-center justify-center rounded-md bg-[#e9626a] text-[10px] font-bold text-[#1a1a1f]">
-            EC
-          </div>
+          <div className="btn-tactile-logo-accent size-9 text-[10px]">EC</div>
         </div>
       </aside>
 
@@ -134,7 +130,7 @@ export function AppShell({
                   className={cn(
                     "flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-[13px] transition-colors",
                     active
-                      ? "bg-[#6c5fc7] font-medium text-white"
+                      ? "bg-[#7553ff] font-medium text-white"
                       : "border border-transparent text-[#c4c1d2] hover:border-[#3d3d48] hover:text-white",
                   )}
                 >
