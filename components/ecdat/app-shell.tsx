@@ -126,10 +126,10 @@ export function AppShell({
                   type="button"
                   onClick={() => onSecondarySelect(item.id)}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-[13px] transition-colors",
+                    "flex w-full items-center justify-between rounded-full px-3 py-1.5 text-left text-[13px] transition-colors",
                     active
                       ? "bg-primary font-medium text-white"
-                      : "border border-transparent text-[#d8d4e4] hover:border-border hover:text-white",
+                      : "border border-transparent text-[#eceaf2] hover:border-border hover:text-white",
                   )}
                 >
                   <span>{item.label}</span>
@@ -238,7 +238,7 @@ export function WorkbenchPanel({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border p-5",
+        "rounded-xl border border-border p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]",
         variant === "accent" ? "bg-panel-surface" : "bg-card",
         className,
       )}

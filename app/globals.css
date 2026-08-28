@@ -44,36 +44,36 @@
   --radius-lg: var(--radius);
 }
 
-/* Enterprise workbench — warm lifted surfaces (darkest rail → brightest canvas) */
+/* Enterprise workbench — dark rail/nav, lifted canvas, inset panels (reference hierarchy) */
 :root,
 .dark {
-  --shell-rail: #17141f;
-  --shell-nav: #252131;
-  --background: #2e2a3a;
+  --shell-rail: #14121a;
+  --shell-nav: #1e1c26;
+  --background: #3f3b4d;
   --foreground: #f6f3ff;
-  --card: #363040;
+  --card: #2c2936;
   --card-foreground: #f6f3ff;
-  --popover: #363040;
+  --popover: #2c2936;
   --popover-foreground: #f6f3ff;
   --primary: #6c5fc7;
   --primary-hover: #5e52b8;
   --primary-foreground: #ffffff;
-  --secondary: #3a3548;
+  --secondary: #353140;
   --secondary-foreground: #f6f3ff;
-  --muted: #322e3e;
-  --muted-foreground: #b8b3c8;
+  --muted: #322f3c;
+  --muted-foreground: #d0cce0;
   --accent: #4a3f6e;
   --accent-foreground: #ebe4ff;
   --destructive: #e65d6e;
-  --border: #1e1b27;
-  --border-muted: #282434;
-  --input: #363040;
+  --border: #141218;
+  --border-muted: #25222e;
+  --input: #2c2936;
   --ring: #6c5fc7;
-  --panel-surface: #3d3550;
+  --panel-surface: #322e3c;
   --preview-surface: #ffffff;
   --radius: 0.5rem;
-  --sidebar: #252131;
-  --sidebar-foreground: #b8b3c8;
+  --sidebar: #1e1c26;
+  --sidebar-foreground: #e8e6ef;
   --sidebar-primary: #6c5fc7;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #6c5fc7;

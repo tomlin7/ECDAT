@@ -546,7 +546,7 @@ function IngestView({
               "mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed px-4 py-10 text-center transition-colors",
               dragOver
                 ? "border-primary bg-primary/10"
-                : "border-border bg-[#1a1a23] hover:border-primary/40",
+                : "border-border bg-card hover:border-primary/40",
             )}
           >
             <Upload className="size-5 text-[#8b8794]" />
@@ -568,7 +568,7 @@ function IngestView({
         {showPaste ? (
           <>
             <div className="mt-4 overflow-hidden rounded-lg border border-border">
-              <div className="flex items-center justify-between gap-3 border-b border-border bg-[#1a1822] px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3 border-b border-border bg-muted px-3 py-2.5">
                 <div className="min-w-0">
                   <p className="text-[13px] font-medium text-white">
                     LLVM IR source
@@ -599,10 +599,10 @@ function IngestView({
                   value={ir}
                   onChange={(e) => onIrChange(e.target.value)}
                   placeholder={"; ModuleID = 'module'\ndefine i32 @main() {\n  ret i32 0\n}"}
-                  className="max-h-96 min-h-48 rounded-none border-0 bg-[#12121a] font-mono text-[12px] shadow-none focus-visible:ring-0"
+                  className="max-h-96 min-h-48 rounded-none border-0 bg-card font-mono text-[12px] shadow-none focus-visible:ring-0"
                 />
               ) : (
-                <div className="bg-[#12121a] px-3 py-3">
+                <div className="bg-card px-3 py-3">
                   <p className="truncate font-mono text-[11px] text-[#a09aab]">
                     {irPreview || "No IR pasted yet."}
                   </p>
@@ -669,7 +669,7 @@ function CorpusView({
             type="button"
             disabled={loading}
             onClick={() => void onLoad(s.id)}
-            className="group rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-[#38324d]"
+            className="group rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-secondary"
           >
             <div className="flex items-start justify-between gap-2">
               <span className="text-[13px] font-medium text-white">
@@ -778,7 +778,7 @@ function DiscoverView({
               type="button"
               disabled={loading}
               onClick={() => void onLoadSample(s.id)}
-              className="group rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-[#38324d]"
+              className="group rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-secondary"
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="text-[13px] font-medium text-white">
@@ -991,7 +991,7 @@ function FindingDetail({
             {finding.evidence.map((ev, i) => (
               <div
                 key={`${ev.summary}-${i}`}
-                className="rounded-lg border border-[#3d3d48] bg-[#1a1822] p-4"
+                className="rounded-lg border border-border bg-muted p-4"
               >
                 <p className="text-[11px] font-semibold tracking-wide text-[#8b8794] uppercase">
                   {ev.kind}
@@ -1002,14 +1002,14 @@ function FindingDetail({
                 </p>
                 <p className="mt-2 text-[13px] text-[#e8e6ef]">{ev.summary}</p>
                 {ev.snippet ? (
-                  <pre className="mt-3 overflow-x-auto rounded-md border border-border bg-[#12121a] p-3 font-mono text-[11px] leading-relaxed text-[#c4b5fd]">
+                  <pre className="mt-3 overflow-x-auto rounded-md border border-border bg-card p-3 font-mono text-[11px] leading-relaxed text-[#c4b5fd]">
                     {ev.snippet}
                   </pre>
                 ) : null}
               </div>
             ))}
             {finding.notes.length ? (
-              <div className="rounded-lg border border-[#3d3d48] bg-[#1a1822] p-4">
+              <div className="rounded-lg border border-border bg-muted p-4">
                 <div className="flex gap-2">
                   <ShieldAlert className="mt-0.5 size-4 shrink-0 text-[#f5a623]" />
                   <div className="min-w-0">
@@ -1045,7 +1045,7 @@ function FindingDetail({
               </div>
             ) : null}
             {activeFn ? (
-              <div className="overflow-hidden rounded-lg border border-[#3d3d48] bg-[#12121a]">
+              <div className="overflow-hidden rounded-lg border border-border bg-card">
                 <ScrollArea className="h-80">
                   <pre className="p-4 font-mono text-[11px] leading-relaxed text-[#c4b5fd]">
                     {activeFn.ir}
@@ -1177,7 +1177,7 @@ function InventoryView({
           </div>
           <ScrollArea className="h-[420px]">
             <table className="w-full text-left text-[12px] text-[#e8e6ef]">
-              <thead className="sticky top-0 bg-[#1a1822] text-[11px] text-[#8b8794] uppercase">
+              <thead className="sticky top-0 bg-muted text-[11px] text-[#8b8794] uppercase">
                 <tr>
                   <th className="px-4 py-2 font-medium">ID</th>
                   <th className="px-4 py-2 font-medium">Primitive</th>
