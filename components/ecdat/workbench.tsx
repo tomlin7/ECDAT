@@ -521,7 +521,7 @@ function IngestView({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <WorkbenchPanel>
+      <WorkbenchPanel variant="accent">
         <h2 className="text-[18px] font-semibold text-white">Ingest artifact</h2>
         <p className="mt-1 text-[13px] text-[#c4c1d2]">
           LLVM IR, ELF/PE objects, or Clang{" "}
@@ -655,7 +655,7 @@ function CorpusView({
 
   return (
     <div>
-      <WorkbenchPanel className="mb-4">
+      <WorkbenchPanel className="mb-4" variant="elevated">
         <h2 className="text-[18px] font-semibold text-white">Evaluation corpus</h2>
         <p className="mt-1 text-[13px] text-[#c4c1d2]">
           {samples.length} labeled samples for SIH demo — click any card to
@@ -746,7 +746,7 @@ function DiscoverView({
     ).filter((s): s is SampleMeta => Boolean(s));
 
     return (
-      <WorkbenchPanel>
+      <WorkbenchPanel variant="accent">
         <h1 className="text-[22px] font-bold text-white">
           Cryptographic discovery workbench
         </h1>
@@ -815,7 +815,7 @@ function DiscoverView({
   }
 
   return (
-    <WorkbenchPanel className="flex h-full min-h-0 flex-col p-0">
+    <WorkbenchPanel className="flex h-full min-h-0 flex-col p-0" variant="elevated">
       <div className="border-b border-border px-5 py-3">
         <div className="flex flex-wrap items-center gap-4 text-[12px] text-[#c4c1d2]">
           <span>
@@ -1093,7 +1093,7 @@ function InventoryView({
 }) {
   if (!inventory) {
     return (
-      <WorkbenchPanel>
+      <WorkbenchPanel variant="accent">
         <h2 className="text-[18px] font-semibold text-white">No inventory yet</h2>
         <p className="mt-2 max-w-lg text-[13px] text-[#c4c1d2]">
           Run an analysis on an artifact first. ECDAT builds a cryptographic
@@ -1246,7 +1246,7 @@ function MetricCell({
   warn?: boolean;
 }) {
   return (
-    <div className="bg-card px-3 py-2.5">
+    <div className="bg-muted px-3 py-2.5">
       <p className="text-[10px] font-medium tracking-wide text-[#8b8794] uppercase">
         {label}
       </p>

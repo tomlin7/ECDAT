@@ -129,7 +129,7 @@ export function AppShell({
                     "flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-[13px] transition-colors",
                     active
                       ? "bg-primary font-medium text-white"
-                      : "border border-transparent text-[#c4c1d2] hover:border-border hover:text-white",
+                      : "border border-transparent text-[#d8d4e4] hover:border-border hover:text-white",
                   )}
                 >
                   <span>{item.label}</span>
@@ -229,14 +229,17 @@ export function FilterChip({
 export function WorkbenchPanel({
   children,
   className,
+  variant = "elevated",
 }: {
   children: ReactNode;
   className?: string;
+  variant?: "elevated" | "accent";
 }) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-panel-surface p-5",
+        "rounded-xl border border-border p-5",
+        variant === "accent" ? "bg-panel-surface" : "bg-card",
         className,
       )}
     >
@@ -255,7 +258,7 @@ export function SetupCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-card p-6",
+        "rounded-xl border border-border bg-muted p-6",
         className,
       )}
     >

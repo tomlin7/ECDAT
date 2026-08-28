@@ -44,42 +44,42 @@
   --radius-lg: var(--radius);
 }
 
-/* Enterprise workbench — layered dark purple surfaces */
+/* Enterprise workbench — warm lifted surfaces (darkest rail → brightest canvas) */
 :root,
 .dark {
-  --background: #1f1d26;
-  --foreground: #f0edf6;
-  --shell-rail: #1a1822;
-  --shell-nav: #26242f;
-  --card: #2d2a38;
-  --card-foreground: #f0edf6;
-  --popover: #2d2a38;
-  --popover-foreground: #f0edf6;
-  --primary: #7553ff;
-  --primary-hover: #6347e8;
+  --shell-rail: #17141f;
+  --shell-nav: #252131;
+  --background: #2e2a3a;
+  --foreground: #f6f3ff;
+  --card: #363040;
+  --card-foreground: #f6f3ff;
+  --popover: #363040;
+  --popover-foreground: #f6f3ff;
+  --primary: #6c5fc7;
+  --primary-hover: #5e52b8;
   --primary-foreground: #ffffff;
-  --secondary: #322f3d;
-  --secondary-foreground: #f0edf6;
-  --muted: #322f3d;
-  --muted-foreground: #a09aab;
-  --accent: #3d3560;
-  --accent-foreground: #e2d9ff;
+  --secondary: #3a3548;
+  --secondary-foreground: #f6f3ff;
+  --muted: #322e3e;
+  --muted-foreground: #b8b3c8;
+  --accent: #4a3f6e;
+  --accent-foreground: #ebe4ff;
   --destructive: #e65d6e;
-  --border: #15131c;
-  --border-muted: #1e1c28;
-  --input: #2d2a38;
-  --ring: #7553ff;
-  --panel-surface: #342f45;
+  --border: #1e1b27;
+  --border-muted: #282434;
+  --input: #363040;
+  --ring: #6c5fc7;
+  --panel-surface: #3d3550;
   --preview-surface: #ffffff;
   --radius: 0.5rem;
-  --sidebar: #26242f;
-  --sidebar-foreground: #a09aab;
-  --sidebar-primary: #7553ff;
+  --sidebar: #252131;
+  --sidebar-foreground: #b8b3c8;
+  --sidebar-primary: #6c5fc7;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #7553ff;
+  --sidebar-accent: #6c5fc7;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #15131c;
-  --sidebar-ring: #7553ff;
+  --sidebar-border: #1e1b27;
+  --sidebar-ring: #6c5fc7;
 }
 
 @layer base {
@@ -127,11 +127,11 @@
 
 @layer components {
   .btn-tactile {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-[6px] border border-border border-t-white/10 bg-[#2a2834] text-[13px] font-medium text-white shadow-[0_2px_0_0_#0a0a0c] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#34313f] active:translate-y-0.5 active:shadow-none;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-[6px] border border-border border-t-white/10 bg-card text-[13px] font-medium text-white shadow-[0_2px_0_0_#121018] transition-[transform,box-shadow,background-color] duration-75 hover:bg-secondary active:translate-y-0.5 active:shadow-none;
   }
 
   .btn-tactile-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-[6px] border-0 border-t border-white/20 bg-[#7553ff] text-[13px] font-semibold text-white shadow-[0_3px_0_0_#452fa8] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#8368ff] active:translate-y-0.5 active:shadow-none disabled:opacity-45;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-[6px] border-0 border-t border-white/20 bg-[#6c5fc7] text-[13px] font-semibold text-white shadow-[0_3px_0_0_#4638a8] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#7d70e8] active:translate-y-0.5 active:shadow-none disabled:opacity-45;
   }
 
   .btn-tactile-icon {
@@ -139,7 +139,7 @@
   }
 
   .btn-tactile-logo {
-    @apply inline-flex shrink-0 items-center justify-center rounded-lg border-0 border-t border-white/20 bg-[#7553ff] font-bold text-white shadow-[0_3px_0_0_#452fa8] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#8368ff] active:translate-y-0.5 active:shadow-none;
+    @apply inline-flex shrink-0 items-center justify-center rounded-lg border-0 border-t border-white/20 bg-[#6c5fc7] font-bold text-white shadow-[0_3px_0_0_#4638a8] transition-[transform,box-shadow,background-color] duration-75 hover:bg-[#7d70e8] active:translate-y-0.5 active:shadow-none;
   }
 
   .btn-tactile-logo-accent {
@@ -147,6 +147,6 @@
   }
 
   .surface-tactile {
-    @apply rounded-[6px] border border-border border-t-white/10 bg-[#2a2834] shadow-[0_2px_0_0_#0a0a0c];
+    @apply rounded-[6px] border border-border border-t-white/10 bg-card shadow-[0_2px_0_0_#121018];
   }
 }
