@@ -4,33 +4,45 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Binary,
-  CheckCircle2,
+  ChevronRight,
   FileCode2,
   Loader2,
+  Search,
   ShieldAlert,
   Upload,
 } from "lucide-react";
+import {
+  AppShell,
+  EmptyState,
+  FilterPill,
+  Panel,
+  SecondaryNav,
+  TopBar,
+  type AppView,
+} from "@/components/ecdat/app-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import type { AnalysisReport, EnterpriseInventory, Finding, FunctionRecord } from "@/lib/ir/types";
+import type {
+  AnalysisReport,
+  EnterpriseInventory,
+  Finding,
+  FunctionRecord,
+} from "@/lib/ir/types";
 import { inventoryToHtml, inventoryToJson } from "@/lib/report";
 import type { SampleMeta } from "@/lib/samples/catalog";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
+
+type FindingFilter = "all" | "weak" | "ir" | "bytes" | "ml";
 
 export function Workbench() {
+  const [view, setView] = useState<AppView>("discover");
+  const [navSection, setNavSection] = useState("feed");
+  const [findingFilter, setFindingFilter] = useState<FindingFilter>("all");
   const [samples, setSamples] = useState<SampleMeta[]>([]);
   const [ir, setIr] = useState("");
   const [filename, setFilename] = useState("pasted.ll");
@@ -64,41 +76,49 @@ export function Workbench() {
     setSelectedFn(
       data.findings[0]?.functions[0] ?? data.functions[0]?.name ?? null,
     );
+    setView("discover");
+    setError(null);
   }, []);
 
-  const runAnalysis = useCallback(async (source: string, name: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ir: source, filename: name }),
-      });
-      await applyReport(res);
-    } catch {
-      setReport(null);
-      setError("Could not reach the analyzer. Check that the dev server is running.");
-    } finally {
-      setLoading(false);
-    }
-  }, [applyReport]);
+  const runAnalysis = useCallback(
+    async (source: string, name: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ir: source, filename: name }),
+        });
+        await applyReport(res);
+      } catch {
+        setReport(null);
+        setError("Could not reach the analyzer.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [applyReport],
+  );
 
-  const runAnalysisBytes = useCallback(async (bytes: ArrayBuffer, name: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const form = new FormData();
-      form.append("file", new Blob([bytes]), name);
-      const res = await fetch("/api/analyze", { method: "POST", body: form });
-      await applyReport(res);
-    } catch {
-      setReport(null);
-      setError("Could not reach the analyzer. Check that the dev server is running.");
-    } finally {
-      setLoading(false);
-    }
-  }, [applyReport]);
+  const runAnalysisBytes = useCallback(
+    async (bytes: ArrayBuffer, name: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const form = new FormData();
+        form.append("file", new Blob([bytes]), name);
+        const res = await fetch("/api/analyze", { method: "POST", body: form });
+        await applyReport(res);
+      } catch {
+        setReport(null);
+        setError("Could not reach the analyzer.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [applyReport],
+  );
 
   async function onFile(file: File) {
     setFilename(file.name);
@@ -173,181 +193,612 @@ export function Workbench() {
     };
   }, [report, assetId, businessUnit, orgSite]);
 
-  return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-border/80 bg-card/40">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex size-10 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-              <Binary className="size-5" />
-            </div>
-            <div>
-              <p className="font-mono text-[11px] tracking-wide text-emerald-400/90">
-                SIH26164 · NTRO · Blockchain &amp; Cybersecurity
-              </p>
-              <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
-                ECDAT — Enterprise Cryptographic Discovery
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Lift Clang LLVM IR, match FIPS/RFC constant tables, flag weak
-                primitives.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="font-mono">
-              LLVM IR frontend
-            </Badge>
-            <Badge variant="outline" className="font-mono">
-              no execution
-            </Badge>
-            <a
-              href="/pitch/sih-deck.html"
-              target="_blank"
-              rel="noreferrer"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "sm" }),
-                "inline-flex",
-              )}
+  const filteredFindings = useMemo(() => {
+    if (!report) return [];
+    return report.findings.filter((f) => {
+      if (findingFilter === "weak") return f.severity === "weak";
+      if (findingFilter === "ir") return f.source === "signature";
+      if (findingFilter === "bytes") return f.source === "binary";
+      if (findingFilter === "ml") return f.source === "ml";
+      return true;
+    });
+  }, [report, findingFilter]);
+
+  const sidebar =
+    view === "discover" ? (
+      <SecondaryNav
+        title="Discover"
+        active={navSection}
+        onSelect={setNavSection}
+        items={[
+          { id: "feed", label: "Feed", count: report?.findings.length },
+          {
+            id: "weak",
+            label: "Weak / deprecated",
+            count: report?.weakCount,
+          },
+          { id: "channels", label: "Channels", count: 3 },
+        ]}
+      />
+    ) : view === "corpus" ? (
+      <SecondaryNav
+        title="Corpus"
+        active={navSection}
+        onSelect={setNavSection}
+        items={[
+          { id: "all", label: "All samples", count: samples.length },
+          {
+            id: "elf",
+            label: "Binary (.o/.so)",
+            count: samples.filter((s) => s.format === "elf").length,
+          },
+          {
+            id: "ir",
+            label: "LLVM IR",
+            count: samples.filter((s) => s.format === "ir").length,
+          },
+        ]}
+      />
+    ) : view === "inventory" ? (
+      <SecondaryNav
+        title="Inventory"
+        active={navSection}
+        onSelect={setNavSection}
+        items={[
+          { id: "export", label: "Export" },
+          { id: "metadata", label: "Asset metadata" },
+        ]}
+      />
+    ) : (
+      <SecondaryNav
+        title="Ingest"
+        active={navSection}
+        onSelect={setNavSection}
+        items={[
+          { id: "upload", label: "Upload" },
+          { id: "paste", label: "Paste IR" },
+        ]}
+      />
+    );
+
+  const topbar = (
+    <TopBar
+      title={
+        view === "discover"
+          ? report
+            ? `Findings — ${report.filename}`
+            : "Cryptographic discovery"
+          : view === "ingest"
+            ? "Ingest artifact"
+            : view === "corpus"
+              ? "Corpus samples"
+              : "Enterprise inventory"
+      }
+      subtitle="SIH26164 · NTRO · ECDAT · static analysis only"
+      actions={
+        <>
+          {loading ? (
+            <Button size="sm" disabled>
+              <Loader2 className="animate-spin" />
+              Analyzing…
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => {
+                if (ir.trim()) void runAnalysis(ir, filename);
+                else setView("ingest");
+              }}
+              disabled={!ir.trim() && view !== "ingest"}
             >
-              Pitch deck
-            </a>
-          </div>
+              <FileCode2 />
+              Analyze
+            </Button>
+          )}
+        </>
+      }
+      filters={
+        view === "discover" && report ? (
+          <>
+            <FilterPill
+              active={findingFilter === "all"}
+              onClick={() => setFindingFilter("all")}
+            >
+              All
+            </FilterPill>
+            <FilterPill
+              active={findingFilter === "weak"}
+              onClick={() => setFindingFilter("weak")}
+            >
+              Weak
+            </FilterPill>
+            <FilterPill
+              active={findingFilter === "ir"}
+              onClick={() => setFindingFilter("ir")}
+            >
+              IR tables
+            </FilterPill>
+            <FilterPill
+              active={findingFilter === "bytes"}
+              onClick={() => setFindingFilter("bytes")}
+            >
+              Raw bytes
+            </FilterPill>
+            <FilterPill
+              active={findingFilter === "ml"}
+              onClick={() => setFindingFilter("ml")}
+            >
+              CFG model
+            </FilterPill>
+            <div className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <Search className="size-3.5" />
+              <span className="font-mono">{report.ingest.kind}</span>
+              <span>·</span>
+              <span>{report.ingest.bytes} B</span>
+            </div>
+          </>
+        ) : null
+      }
+    />
+  );
+
+  return (
+    <AppShell
+      view={view}
+      onView={setView}
+      topbar={topbar}
+      sidebar={sidebar}
+    >
+      {error ? (
+        <div className="p-4">
+          <Alert variant="destructive">
+            <AlertCircle />
+            <AlertTitle>Analysis error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         </div>
-      </header>
+      ) : null}
 
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1.4fr)]">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Ingest</CardTitle>
-              <CardDescription>
-                Textual <span className="font-mono">.ll</span>, ELF/PE objects, or
-                Clang <span className="font-mono">.o</span>. Signatures, CFG
-                model, and raw constant-table scan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <label
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  const file = e.dataTransfer.files[0];
-                  if (file) void onFile(file);
-                }}
-                className={cn(
-                  "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-8 text-center transition-colors",
-                  dragOver
-                    ? "border-emerald-400 bg-emerald-500/10"
-                    : "border-border hover:border-emerald-500/40 hover:bg-muted/40",
-                )}
-              >
-                <Upload className="size-5 text-muted-foreground" />
-                <div className="text-sm">
-                  Drop <span className="font-mono">.ll / .o / ELF / PE</span> or
-                  click to browse
-                </div>
-                <p className="text-xs text-muted-foreground">Max 2 MB · UTF-8 IR</p>
-                <input
-                  type="file"
-                  accept=".ll,.ir,.txt,.bc,.o,.so,.exe,.bin,.elf"
-                  className="sr-only"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void onFile(file);
-                  }}
-                />
-              </label>
+      {view === "ingest" ? (
+        <IngestView
+          ir={ir}
+          filename={filename}
+          loading={loading}
+          dragOver={dragOver}
+          onDragOver={setDragOver}
+          onFile={onFile}
+          onIrChange={setIr}
+          onAnalyze={() => void runAnalysis(ir, filename)}
+        />
+      ) : null}
 
-              <div>
-                <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Clang corpus (O0, value names kept)
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {samples.map((s) => (
-                    <Button
-                      key={s.id}
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void loadSample(s.id)}
-                      disabled={loading}
-                    >
-                      {s.title}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+      {view === "corpus" ? (
+        <CorpusView
+          samples={samples}
+          section={navSection}
+          loading={loading}
+          onLoad={loadSample}
+        />
+      ) : null}
 
-              <Textarea
-                value={ir}
-                onChange={(e) => setIr(e.target.value)}
-                placeholder={"; ModuleID = 'module'\ndefine i32 @main() {\n  ret i32 0\n}"}
-                className={cn("font-mono text-xs", report ? "min-h-24" : "min-h-40")}
-              />
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  onClick={() => void runAnalysis(ir, filename)}
-                  disabled={loading || !ir.trim()}
-                >
-                  {loading ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <FileCode2 />
-                  )}
-                  Analyze IR
-                </Button>
-                <span className="font-mono text-xs text-muted-foreground">
-                  {filename}
-                  {ir ? ` · ${(ir.length / 1024).toFixed(1)} KB` : ""}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+      {view === "inventory" ? (
+        <InventoryView
+          inventory={patchedInventory}
+          assetId={assetId}
+          businessUnit={businessUnit}
+          orgSite={orgSite}
+          onAssetId={setAssetId}
+          onBusinessUnit={setBusinessUnit}
+          onOrgSite={setOrgSite}
+        />
+      ) : null}
 
-          <ResultsPane
-            loading={loading}
-            error={error}
-            report={report}
-            inventory={patchedInventory}
-            assetId={assetId}
-            businessUnit={businessUnit}
-            orgSite={orgSite}
-            onAssetId={setAssetId}
-            onBusinessUnit={setBusinessUnit}
-            onOrgSite={setOrgSite}
-            selectedFinding={selectedFinding}
-            activeFinding={activeFinding}
-            activeFn={activeFn}
-            onSelectFinding={(id) => {
-              setSelectedFinding(id);
-              const f = report?.findings.find((x) => x.id === id);
-              if (f?.functions[0]) setSelectedFn(f.functions[0]);
+      {view === "discover" ? (
+        <DiscoverView
+          loading={loading}
+          report={report}
+          findings={filteredFindings}
+          selectedFinding={selectedFinding}
+          activeFinding={activeFinding}
+          activeFn={activeFn}
+          onSelectFinding={(id) => {
+            setSelectedFinding(id);
+            const f = report?.findings.find((x) => x.id === id);
+            if (f?.functions[0]) setSelectedFn(f.functions[0]);
+          }}
+          onSelectFn={setSelectedFn}
+          onGoIngest={() => setView("ingest")}
+          onLoadDemo={() => void loadSample("enterprise_mix")}
+        />
+      ) : null}
+    </AppShell>
+  );
+}
+
+function IngestView({
+  ir,
+  filename,
+  loading,
+  dragOver,
+  onDragOver,
+  onFile,
+  onIrChange,
+  onAnalyze,
+}: {
+  ir: string;
+  filename: string;
+  loading: boolean;
+  dragOver: boolean;
+  onDragOver: (v: boolean) => void;
+  onFile: (f: File) => void;
+  onIrChange: (v: string) => void;
+  onAnalyze: () => void;
+}) {
+  return (
+    <div className="mx-auto max-w-3xl p-6">
+      <Panel className="p-6">
+        <h2 className="text-[15px] font-semibold">Upload or paste</h2>
+        <p className="mt-1 text-[13px] text-muted-foreground">
+          LLVM IR, ELF/PE objects, or Clang{" "}
+          <span className="font-mono">.o</span> /{" "}
+          <span className="font-mono">.so</span>. Max 8 MB.
+        </p>
+        <label
+          onDragOver={(e) => {
+            e.preventDefault();
+            onDragOver(true);
+          }}
+          onDragLeave={() => onDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            onDragOver(false);
+            const file = e.dataTransfer.files[0];
+            if (file) void onFile(file);
+          }}
+          className={cn(
+            "mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed px-4 py-10 text-center transition-colors",
+            dragOver
+              ? "border-primary bg-primary/10"
+              : "border-border bg-[#1a1a23] hover:border-primary/40",
+          )}
+        >
+          <Upload className="size-5 text-muted-foreground" />
+          <span className="text-[13px]">
+            Drop <span className="font-mono">.ll / .o / ELF / PE</span> or
+            browse
+          </span>
+          <input
+            type="file"
+            accept=".ll,.ir,.txt,.bc,.o,.so,.exe,.bin,.elf"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void onFile(file);
             }}
-            onSelectFn={setSelectedFn}
           />
-        </section>
-
-        <footer className="border-t border-border/60 pt-4 pb-2 text-xs text-muted-foreground">
-          Lift path: <span className="font-mono">clang -S -emit-llvm -O0 -fno-discard-value-names file.c</span>
-          . ECDAT never runs the module. Weak findings (MD5, SHA-1, DES, CRC)
-          are inventory flags, not exploits.
-        </footer>
-      </main>
+        </label>
+        <Textarea
+          value={ir}
+          onChange={(e) => onIrChange(e.target.value)}
+          placeholder={"; ModuleID = 'module'\ndefine i32 @main() {\n  ret i32 0\n}"}
+          className="mt-4 min-h-40 border-border bg-[#1a1a23] font-mono text-[12px]"
+        />
+        <div className="mt-3 flex items-center justify-between">
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {filename}
+            {ir ? ` · ${(ir.length / 1024).toFixed(1)} KB` : ""}
+          </span>
+          <Button onClick={onAnalyze} disabled={loading || !ir.trim()}>
+            {loading ? <Loader2 className="animate-spin" /> : <FileCode2 />}
+            Analyze IR
+          </Button>
+        </div>
+      </Panel>
     </div>
   );
 }
 
-function ResultsPane({
+function CorpusView({
+  samples,
+  section,
   loading,
-  error,
+  onLoad,
+}: {
+  samples: SampleMeta[];
+  section: string;
+  loading: boolean;
+  onLoad: (id: string) => void;
+}) {
+  const filtered = samples.filter((s) => {
+    if (section === "elf") return s.format === "elf";
+    if (section === "ir") return s.format === "ir";
+    return true;
+  });
+
+  return (
+    <div className="p-6">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {filtered.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            disabled={loading}
+            onClick={() => void onLoad(s.id)}
+            className="group rounded-lg border border-border bg-[#1e1e29] p-4 text-left transition-colors hover:border-primary/40 hover:bg-[#24242f]"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-[13px] font-medium text-foreground">
+                {s.title}
+              </span>
+              <Badge variant="outline" className="shrink-0">
+                {s.format}
+              </Badge>
+            </div>
+            <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+              {s.blurb}
+            </p>
+            <p className="mt-2 font-mono text-[10px] text-muted-foreground">
+              {s.expected.length
+                ? s.expected.join(" · ")
+                : "negative control"}
+            </p>
+            <ChevronRight className="mt-2 size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DiscoverView({
+  loading,
   report,
+  findings,
+  selectedFinding,
+  activeFinding,
+  activeFn,
+  onSelectFinding,
+  onSelectFn,
+  onGoIngest,
+  onLoadDemo,
+}: {
+  loading: boolean;
+  report: AnalysisReport | null;
+  findings: Finding[];
+  selectedFinding: string | null;
+  activeFinding: Finding | null;
+  activeFn: FunctionRecord | null;
+  onSelectFinding: (id: string) => void;
+  onSelectFn: (name: string) => void;
+  onGoIngest: () => void;
+  onLoadDemo: () => void;
+}) {
+  if (loading && !report) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        <Loader2 className="mr-2 size-5 animate-spin" />
+        Walking IR, matching constant tables…
+      </div>
+    );
+  }
+
+  if (!report) {
+    return (
+      <EmptyState
+        title="Get started with ECDAT"
+        description="Upload LLVM IR or a stripped binary to discover AES, SHA, TLS, RSA-shaped modexp, and weak primitives — with evidence from three static channels."
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button onClick={onGoIngest}>
+              <Upload />
+              Upload artifact
+            </Button>
+            <Button variant="outline" onClick={onLoadDemo}>
+              <Binary />
+              Load enterprise mix
+            </Button>
+          </div>
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="flex h-full min-h-0">
+      {/* Issue list */}
+      <div className="flex w-[360px] shrink-0 flex-col border-r border-border">
+        <div className="grid grid-cols-3 gap-px border-b border-border bg-border">
+          <MetricCell label="Functions" value={String(report.functionCount)} />
+          <MetricCell label="Primitives" value={String(report.findings.length)} />
+          <MetricCell
+            label="Weak"
+            value={String(report.weakCount)}
+            warn={report.weakCount > 0}
+          />
+        </div>
+        <ScrollArea className="flex-1">
+          {findings.length === 0 ? (
+            <p className="p-4 text-[13px] text-muted-foreground">
+              No findings match this filter.
+            </p>
+          ) : (
+            <ul>
+              {findings.map((f) => (
+                <li key={f.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectFinding(f.id)}
+                    className={cn(
+                      "flex w-full gap-3 border-b border-border px-4 py-3 text-left transition-colors",
+                      selectedFinding === f.id
+                        ? "bg-primary/10"
+                        : "hover:bg-[#1e1e29]",
+                    )}
+                  >
+                    <SeverityDot severity={f.severity} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="truncate text-[13px] font-medium text-foreground">
+                          {f.primitive}
+                        </p>
+                        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                          {(f.confidence * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                        {f.title}
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        <SourceBadge source={f.source} />
+                        {f.severity === "weak" ? (
+                          <Badge variant="warning">weak</Badge>
+                        ) : null}
+                      </div>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </ScrollArea>
+      </div>
+
+      {/* Detail */}
+      <div className="min-w-0 flex-1 overflow-auto p-5">
+        {activeFinding ? (
+          <FindingDetail
+            report={report}
+            finding={activeFinding}
+            activeFn={activeFn}
+            onSelectFn={onSelectFn}
+          />
+        ) : (
+          <p className="text-[13px] text-muted-foreground">
+            Select a finding from the feed.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FindingDetail({
+  report,
+  finding,
+  activeFn,
+  onSelectFn,
+}: {
+  report: AnalysisReport;
+  finding: Finding;
+  activeFn: FunctionRecord | null;
+  onSelectFn: (name: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-lg font-semibold">{finding.primitive}</h2>
+          <SeverityBadge severity={finding.severity} />
+          <SourceBadge source={finding.source} />
+          <span className="font-mono text-[12px] text-muted-foreground">
+            {finding.id} · {(finding.confidence * 100).toFixed(0)}% confidence
+          </span>
+        </div>
+        <p className="mt-2 text-[13px] text-muted-foreground">
+          {finding.rationale}
+        </p>
+        {report.targetTriple ? (
+          <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+            {report.targetTriple}
+            {report.ml
+              ? ` · holdout ${(report.ml.holdoutAccuracy * 100).toFixed(0)}%`
+              : ""}
+          </p>
+        ) : null}
+      </div>
+
+      <Tabs defaultValue="evidence">
+        <TabsList variant="line">
+          <TabsTrigger value="evidence">Evidence</TabsTrigger>
+          <TabsTrigger value="ir">Function IR</TabsTrigger>
+          <TabsTrigger value="mix">Opcode mix</TabsTrigger>
+        </TabsList>
+        <TabsContent value="evidence" className="mt-4 space-y-3">
+          {finding.evidence.map((ev, i) => (
+            <Panel key={`${ev.summary}-${i}`} className="p-4">
+              <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                {ev.kind}
+                {ev.line ? ` · line ${ev.line}` : ""}
+                {ev.offset != null
+                  ? ` · offset 0x${ev.offset.toString(16)}`
+                  : ""}
+              </p>
+              <p className="mt-2 text-[13px]">{ev.summary}</p>
+              {ev.snippet ? (
+                <pre className="mt-2 overflow-x-auto rounded-md border border-border bg-[#12121a] p-3 font-mono text-[11px] text-[#c4b5fd]">
+                  {ev.snippet}
+                </pre>
+              ) : null}
+            </Panel>
+          ))}
+          {finding.notes.length ? (
+            <Alert>
+              <ShieldAlert />
+              <AlertTitle>Posture notes</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc space-y-1 pl-4">
+                  {finding.notes.map((n) => (
+                    <li key={n}>{n}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+        </TabsContent>
+        <TabsContent value="ir" className="mt-4 space-y-2">
+          {report.functions.length ? (
+            <div className="flex flex-wrap gap-1">
+              {report.functions.map((fn) => (
+                <Button
+                  key={fn.name}
+                  type="button"
+                  size="xs"
+                  variant={activeFn?.name === fn.name ? "default" : "outline"}
+                  onClick={() => onSelectFn(fn.name)}
+                  className="font-mono"
+                >
+                  @{fn.name}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+          {activeFn ? (
+            <ScrollArea className="h-80 rounded-md border border-border bg-[#12121a]">
+              <pre className="p-4 font-mono text-[11px] leading-relaxed text-[#c4b5fd]">
+                {activeFn.ir}
+              </pre>
+            </ScrollArea>
+          ) : (
+            <p className="text-[13px] text-muted-foreground">
+              No function selected.
+            </p>
+          )}
+        </TabsContent>
+        <TabsContent value="mix" className="mt-4">
+          {activeFn ? (
+            <OpcodeBars fn={activeFn} />
+          ) : (
+            <p className="text-[13px] text-muted-foreground">
+              No function selected.
+            </p>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function InventoryView({
   inventory,
   assetId,
   businessUnit,
@@ -355,15 +806,7 @@ function ResultsPane({
   onAssetId,
   onBusinessUnit,
   onOrgSite,
-  selectedFinding,
-  activeFinding,
-  activeFn,
-  onSelectFinding,
-  onSelectFn,
 }: {
-  loading: boolean;
-  error: string | null;
-  report: AnalysisReport | null;
   inventory: EnterpriseInventory | null;
   assetId: string;
   businessUnit: string;
@@ -371,381 +814,116 @@ function ResultsPane({
   onAssetId: (v: string) => void;
   onBusinessUnit: (v: string) => void;
   onOrgSite: (v: string) => void;
-  selectedFinding: string | null;
-  activeFinding: Finding | null;
-  activeFn: FunctionRecord | null;
-  onSelectFinding: (id: string) => void;
-  onSelectFn: (name: string) => void;
 }) {
-  if (loading && !report) {
+  if (!inventory) {
     return (
-      <Card className="flex min-h-72 items-center justify-center">
-        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-          <Loader2 className="size-6 animate-spin" />
-          <p className="text-sm">Walking IR, matching constant tables…</p>
-        </div>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle />
-        <AlertTitle>Analyzer rejected the input</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!report) {
-    return (
-      <Card className="flex min-h-72 flex-col justify-center">
-        <CardHeader>
-          <CardTitle className="text-base">Waiting for a module</CardTitle>
-          <CardDescription>
-            Load the enterprise mix or the AES ELF object. Signatures, a CFG
-            softmax model, and raw constant-table scan.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Static analysis only. Nothing is executed, injected, or packed.
-        </CardContent>
-      </Card>
+      <EmptyState
+        title="No inventory yet"
+        description="Run an analysis first — then tag the asset and export a JSON or HTML cryptographic inventory report."
+      />
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Findings</CardTitle>
-        <CardDescription>{report.summary}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-3 gap-2">
-          <Stat label="Functions" value={String(report.functionCount)} />
-          <Stat label="Primitives" value={String(report.findings.length)} />
-          <Stat
-            label="Weak / deprecated"
-            value={String(report.weakCount)}
-            warn={report.weakCount > 0}
-          />
-        </div>
-        {report.targetTriple ? (
-          <p className="font-mono text-[11px] text-muted-foreground">
-            triple {report.targetTriple}
-          </p>
-        ) : null}
-        {report.ingest ? (
-          <p className="font-mono text-[11px] text-muted-foreground">
-            ingest {report.ingest.kind} · {report.ingest.bytes} bytes
-            {report.ingest.channels.signatures ? " · IR tables" : ""}
-            {report.ingest.channels.ml ? " · CFG model" : ""}
-            {report.ingest.channels.binary ? " · raw bytes" : ""}
-            {report.ml
-              ? ` · holdout ${(report.ml.holdoutAccuracy * 100).toFixed(0)}% n=${report.ml.trainedOn}`
-              : ""}
-          </p>
-        ) : null}
-        <Separator />
-        {report.findings.length === 0 ? (
-          <div className="flex items-start gap-2 rounded-lg border border-border/80 p-3 text-sm">
-            <CheckCircle2 className="mt-0.5 size-4 text-emerald-400" />
-            <p>
-              No FIPS/RFC tables or RSA-shaped modexp matched. This is the
-              expected result for business logic IR such as the benign sample.
+    <div className="p-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <Panel className="p-5">
+          <h2 className="text-[15px] font-semibold">Asset metadata</h2>
+          <div className="mt-4 space-y-3">
+            <label className="block space-y-1">
+              <span className="text-[11px] font-medium text-muted-foreground uppercase">
+                Asset ID
+              </span>
+              <Input
+                className="font-mono"
+                value={assetId}
+                onChange={(e) => onAssetId(e.target.value)}
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-[11px] font-medium text-muted-foreground uppercase">
+                Business unit
+              </span>
+              <Input
+                value={businessUnit}
+                onChange={(e) => onBusinessUnit(e.target.value)}
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-[11px] font-medium text-muted-foreground uppercase">
+                Org site
+              </span>
+              <Input
+                value={orgSite}
+                onChange={(e) => onOrgSite(e.target.value)}
+                placeholder="dc-east / firmware/build-42"
+              />
+            </label>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => downloadBlob(inventoryToJson(inventory), "application/json", `${inventory.assetId}-inventory.json`)}
+            >
+              Export JSON
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => downloadBlob(inventoryToHtml(inventory), "text/html", `${inventory.assetId}-inventory.html`)}
+            >
+              Export HTML
+            </Button>
+          </div>
+        </Panel>
+
+        <Panel className="overflow-hidden">
+          <div className="border-b border-border px-4 py-3">
+            <h2 className="text-[15px] font-semibold">Cryptographic inventory</h2>
+            <p className="text-[12px] text-muted-foreground">
+              {inventory.primitiveCount} primitives · {inventory.weakCount} weak
             </p>
           </div>
-        ) : (
-          <ul className="space-y-2">
-            {report.findings.map((f) => (
-              <li key={f.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelectFinding(f.id)}
-                  className={cn(
-                    "w-full rounded-xl border px-3 py-3 text-left transition-colors",
-                    selectedFinding === f.id
-                      ? "border-emerald-500/40 bg-emerald-500/10"
-                      : "border-border/80 hover:bg-muted/50",
-                  )}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {f.id}
-                      </span>
-                      <span className="text-sm font-medium">{f.title}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <SeverityBadge severity={f.severity} />
-                      <SourceBadge source={f.source} />
-                      <span className="font-mono text-xs">
-                        {(f.confidence * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                  </div>
-                  <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                    {f.functions.length
-                      ? f.functions.map((n) => `@${n}`).join("  ")
-                      : "module-level constant"}
-                  </p>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <Tabs defaultValue="evidence" className="pt-1">
-          <TabsList>
-            <TabsTrigger value="evidence">Evidence</TabsTrigger>
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
-            <TabsTrigger value="ir">Function IR</TabsTrigger>
-            <TabsTrigger value="mix">Opcode mix</TabsTrigger>
-            <TabsTrigger value="fns">Functions</TabsTrigger>
-          </TabsList>
-          <TabsContent value="evidence" className="mt-3">
-            {activeFinding ? (
-              <div className="space-y-3">
-                <p className="text-sm">{activeFinding.rationale}</p>
-                <ul className="space-y-2">
-                  {activeFinding.evidence.map((ev, i) => (
-                    <li
-                      key={`${ev.summary}-${i}`}
-                      className="rounded-lg border border-border/80 bg-muted/30 p-3"
-                    >
-                      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                        {ev.kind}
-                        {ev.line ? ` · line ${ev.line}` : ""}
-                      </p>
-                      <p className="mt-1 text-sm">{ev.summary}</p>
-                      {ev.snippet ? (
-                        <pre className="mt-2 overflow-x-auto font-mono text-[11px] leading-relaxed text-muted-foreground">
-                          {ev.snippet}
-                        </pre>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-                {activeFinding.notes.length ? (
-                  <Alert>
-                    <ShieldAlert />
-                    <AlertTitle>Posture notes</AlertTitle>
-                    <AlertDescription>
-                      <ul className="list-disc space-y-1 pl-4">
-                        {activeFinding.notes.map((n) => (
-                          <li key={n}>{n}</li>
-                        ))}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                ) : null}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Select a finding to see constant-table and CFG evidence.
-              </p>
-            )}
-          </TabsContent>
-          <TabsContent value="inventory" className="mt-3 space-y-3">
-            {inventory ? (
-              <>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <label className="space-y-1 text-xs">
-                    <span className="text-muted-foreground">Asset ID</span>
-                    <input
-                      className="w-full rounded-md border border-border bg-background px-2 py-1.5 font-mono text-xs"
-                      value={assetId}
-                      onChange={(e) => onAssetId(e.target.value)}
-                    />
-                  </label>
-                  <label className="space-y-1 text-xs">
-                    <span className="text-muted-foreground">Business unit</span>
-                    <input
-                      className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
-                      value={businessUnit}
-                      onChange={(e) => onBusinessUnit(e.target.value)}
-                    />
-                  </label>
-                  <label className="space-y-1 text-xs">
-                    <span className="text-muted-foreground">Org site (optional)</span>
-                    <input
-                      className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
-                      value={orgSite}
-                      onChange={(e) => onOrgSite(e.target.value)}
-                      placeholder="e.g. dc-east / firmware/build-42"
-                    />
-                  </label>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Stat label="Asset" value={inventory.assetId.slice(0, 18)} />
-                  <Stat label="OK" value={String(inventory.counts.ok)} />
-                  <Stat
-                    label="Review"
-                    value={String(inventory.counts.review)}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const blob = new Blob([inventoryToJson(inventory)], {
-                        type: "application/json",
-                      });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `${inventory.assetId.replace(/[^a-z0-9._-]+/gi, "_")}-inventory.json`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
+          <ScrollArea className="h-[420px]">
+            <table className="w-full text-left text-[12px]">
+              <thead className="sticky top-0 bg-[#24242f] text-[11px] text-muted-foreground uppercase">
+                <tr>
+                  <th className="px-4 py-2 font-medium">ID</th>
+                  <th className="px-4 py-2 font-medium">Primitive</th>
+                  <th className="px-4 py-2 font-medium">Sev</th>
+                  <th className="px-4 py-2 font-medium">Conf</th>
+                  <th className="px-4 py-2 font-medium">Location</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inventory.rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="border-t border-border hover:bg-[#24242f]/50"
                   >
-                    Export JSON
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const blob = new Blob([inventoryToHtml(inventory)], {
-                        type: "text/html",
-                      });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `${inventory.assetId.replace(/[^a-z0-9._-]+/gi, "_")}-inventory.html`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                  >
-                    Export HTML
-                  </Button>
-                </div>
-                <ScrollArea className="h-64 rounded-lg border border-border/80">
-                  <table className="w-full text-left text-xs">
-                    <thead className="sticky top-0 bg-muted/80">
-                      <tr>
-                        <th className="px-2 py-1.5">ID</th>
-                        <th className="px-2 py-1.5">Primitive</th>
-                        <th className="px-2 py-1.5">Sev</th>
-                        <th className="px-2 py-1.5">Conf</th>
-                        <th className="px-2 py-1.5">Location</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {inventory.rows.map((row) => (
-                        <tr key={row.id} className="border-t border-border/60">
-                          <td className="px-2 py-1.5 font-mono">{row.id}</td>
-                          <td className="px-2 py-1.5">{row.primitive}</td>
-                          <td className="px-2 py-1.5">{row.severity}</td>
-                          <td className="px-2 py-1.5 font-mono">
-                            {(row.confidence * 100).toFixed(0)}%
-                          </td>
-                          <td className="px-2 py-1.5 font-mono text-muted-foreground">
-                            {row.locations.slice(0, 2).join(" · ")}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </ScrollArea>
-                {inventory.rows[0] ? (
-                  <p className="text-sm text-muted-foreground">
-                    {inventory.rows[0].recommendation}
-                  </p>
-                ) : null}
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">No inventory rows.</p>
-            )}
-          </TabsContent>
-          <TabsContent value="ir" className="mt-3 space-y-2">
-            {report.functions.length ? (
-              <div className="flex flex-wrap gap-1">
-                {report.functions.map((fn) => (
-                  <Button
-                    key={fn.name}
-                    type="button"
-                    size="xs"
-                    variant={activeFn?.name === fn.name ? "default" : "outline"}
-                    onClick={() => onSelectFn(fn.name)}
-                    className="font-mono"
-                  >
-                    @{fn.name}
-                  </Button>
+                    <td className="px-4 py-2.5 font-mono">{row.id}</td>
+                    <td className="px-4 py-2.5">{row.primitive}</td>
+                    <td className="px-4 py-2.5">
+                      <SeverityBadge severity={row.severity} />
+                    </td>
+                    <td className="px-4 py-2.5 font-mono">
+                      {(row.confidence * 100).toFixed(0)}%
+                    </td>
+                    <td className="max-w-[200px] truncate px-4 py-2.5 font-mono text-muted-foreground">
+                      {row.locations.slice(0, 2).join(" · ")}
+                    </td>
+                  </tr>
                 ))}
-              </div>
-            ) : null}
-            {activeFn ? (
-              <ScrollArea className="h-72 rounded-lg border border-border/80 bg-black/40">
-                <pre className="p-3 font-mono text-[11px] leading-relaxed text-emerald-100/90">
-                  {activeFn.ir}
-                </pre>
-              </ScrollArea>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No function selected.
-              </p>
-            )}
-          </TabsContent>
-          <TabsContent value="mix" className="mt-3">
-            {activeFn ? (
-              <OpcodeBars fn={activeFn} />
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No function selected.
-              </p>
-            )}
-          </TabsContent>
-          <TabsContent value="fns" className="mt-3">
-            {report.functions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No <span className="font-mono">define</span> functions in this
-                module.
-              </p>
-            ) : (
-              <ul className="space-y-1">
-                {report.functions.map((fn) => {
-                  const tagged = report.findings.some((f) =>
-                    f.functions.includes(fn.name),
-                  );
-                  return (
-                    <li key={fn.name}>
-                      <button
-                        type="button"
-                        onClick={() => onSelectFn(fn.name)}
-                        className={cn(
-                          "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors",
-                          activeFn?.name === fn.name
-                            ? "bg-muted"
-                            : "hover:bg-muted/60",
-                        )}
-                      >
-                        <span className="font-mono text-xs sm:text-sm">
-                          @{fn.name}
-                        </span>
-                        <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                          {tagged ? (
-                            <Badge variant="secondary">crypto</Badge>
-                          ) : null}
-                          {fn.blocks} bb · {fn.edges} br
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+              </tbody>
+            </table>
+          </ScrollArea>
+        </Panel>
+      </div>
+    </div>
   );
 }
 
-function Stat({
+function MetricCell({
   label,
   value,
   warn,
@@ -755,14 +933,14 @@ function Stat({
   warn?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-border/80 px-3 py-2">
-      <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
+    <div className="bg-[#1e1e29] px-3 py-2.5">
+      <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </p>
       <p
         className={cn(
-          "font-mono text-xl",
-          warn ? "text-amber-400" : "text-foreground",
+          "mt-0.5 font-mono text-lg",
+          warn ? "text-[#f5a623]" : "text-foreground",
         )}
       >
         {value}
@@ -771,26 +949,26 @@ function Stat({
   );
 }
 
+function SeverityDot({ severity }: { severity: Finding["severity"] }) {
+  const color =
+    severity === "weak"
+      ? "bg-[#f55459]"
+      : severity === "info"
+        ? "bg-[#57bcf0]"
+        : "bg-[#57d9a3]";
+  return <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", color)} />;
+}
+
 function SourceBadge({ source }: { source: Finding["source"] }) {
-  if (source === "ml") return <Badge variant="secondary">model</Badge>;
-  if (source === "binary")
-    return (
-      <Badge variant="outline" className="border-sky-500/40 text-sky-400">
-        bytes
-      </Badge>
-    );
-  return <Badge variant="outline">IR table</Badge>;
+  if (source === "ml") return <Badge variant="info">model</Badge>;
+  if (source === "binary") return <Badge variant="secondary">bytes</Badge>;
+  return <Badge variant="outline">IR</Badge>;
 }
 
 function SeverityBadge({ severity }: { severity: Finding["severity"] }) {
-  if (severity === "weak")
-    return <Badge variant="destructive">weak</Badge>;
-  if (severity === "info") return <Badge variant="secondary">review</Badge>;
-  return (
-    <Badge variant="outline" className="border-emerald-500/40 text-emerald-400">
-      expected
-    </Badge>
-  );
+  if (severity === "weak") return <Badge variant="warning">weak</Badge>;
+  if (severity === "info") return <Badge variant="info">review</Badge>;
+  return <Badge variant="success">ok</Badge>;
 }
 
 function OpcodeBars({ fn }: { fn: FunctionRecord }) {
@@ -800,27 +978,42 @@ function OpcodeBars({ fn }: { fn: FunctionRecord }) {
   const max = Math.max(1, ...entries.map(([, n]) => n));
   if (!entries.length) {
     return (
-      <p className="text-sm text-muted-foreground">No counted opcodes.</p>
+      <p className="text-[13px] text-muted-foreground">No counted opcodes.</p>
     );
   }
   return (
     <ul className="space-y-2">
       {entries.map(([op, n]) => (
-        <li key={op} className="grid grid-cols-[4.5rem_1fr_2rem] items-center gap-2">
-          <span className="font-mono text-xs">{op}</span>
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
+        <li
+          key={op}
+          className="grid grid-cols-[4.5rem_1fr_2rem] items-center gap-2"
+        >
+          <span className="font-mono text-[11px]">{op}</span>
+          <div className="h-1.5 overflow-hidden rounded-full bg-[#2a2a35]">
             <div
-              className="h-full bg-emerald-500/80"
+              className="h-full bg-primary"
               style={{ width: `${(n / max) * 100}%` }}
             />
           </div>
-          <span className="font-mono text-xs text-muted-foreground">{n}</span>
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {n}
+          </span>
         </li>
       ))}
-      <li className="pt-1 text-xs text-muted-foreground">
+      <li className="pt-1 text-[11px] text-muted-foreground">
         bitwise density {fn.bitwiseDensity.toFixed(2)} · {fn.instructionCount}{" "}
         inst
       </li>
     </ul>
   );
+}
+
+function downloadBlob(content: string, mime: string, filename: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename.replace(/[^a-z0-9._-]+/gi, "_");
+  a.click();
+  URL.revokeObjectURL(url);
 }
