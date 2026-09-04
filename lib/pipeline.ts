@@ -157,7 +157,7 @@ export function analyzeArtifact(buf: Uint8Array, filename: string): AnalysisRepo
     fused.length === 0
       ? isIr
         ? "No cryptographic primitives matched in IR (signatures + model both quiet)."
-        : "No known constant tables in this file image. Lift to LLVM IR for CFG/ML scoring."
+        : "No known constant tables in this file image. This is a valid empty inventory — ECDAT does not require LLVM IR."
       : `Matched ${fused.length} primitive${fused.length === 1 ? "" : "s"} (${names.join(", ")})${
           weakCount ? ` — ${weakCount} flagged weak/deprecated` : ""
         }.`;
