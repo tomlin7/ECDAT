@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ECDAT — Cryptographic Discovery",
   description:
-    "SIH26164 enterprise workbench: LLVM IR, CFG model, and binary constant-table discovery.",
+    "SIH26164: static cryptographic inventory of compiled binaries and firmware images.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

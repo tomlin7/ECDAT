@@ -8,7 +8,7 @@ export type SampleMeta = {
   title: string;
   blurb: string;
   expected: PrimitiveId[];
-  format: "ir" | "elf";
+  format: "ir" | "binary";
 };
 
 export const SAMPLE_CATALOG: SampleMeta[] = [
@@ -32,9 +32,9 @@ export const SAMPLE_CATALOG: SampleMeta[] = [
     id: "aes_obj",
     filename: "aes.o",
     title: "AES ELF object",
-    blurb: "clang -c output — raw S-box in .rodata, no IR parse.",
+    blurb: "Compiled ELF object — AES S-box in .rodata. Product-path demo.",
     expected: ["AES"],
-    format: "elf",
+    format: "binary",
   },
   {
     id: "sha256",
@@ -120,17 +120,17 @@ export const SAMPLE_CATALOG: SampleMeta[] = [
     id: "vendor_openssl_stripped",
     filename: "vendor_openssl_aes_stripped.o",
     title: "Stripped vendor AES (.o)",
-    blurb: "OpenSSL Te0 + S-box, strip --strip-all — no symbols.",
+    blurb: "OpenSSL Te0 + S-box, strip --strip-all. Product-path demo.",
     expected: ["AES"],
-    format: "elf",
+    format: "binary",
   },
   {
     id: "enterprise_mix_stripped",
     filename: "enterprise_mix_stripped.o",
     title: "Stripped enterprise mix (.o)",
-    blurb: "-O2 stripped multi-crypto ELF object from enterprise_mix.c.",
+    blurb: "Stripped multi-crypto ELF object. Product-path demo.",
     expected: ["AES", "SHA-256", "ChaCha20", "MD5"],
-    format: "elf",
+    format: "binary",
   },
   {
     id: "tls_ciphers",
@@ -160,17 +160,17 @@ export const SAMPLE_CATALOG: SampleMeta[] = [
     id: "crypto_firmware_pe",
     filename: "crypto_firmware.pe.bin",
     title: "PE firmware blob",
-    blurb: "Minimal MZ/PE image with AES S-box + TLS ciphers in rodata.",
+    blurb: "Minimal MZ/PE image with AES S-box + TLS ciphers. Product-path demo.",
     expected: ["AES", "TLS-stack"],
-    format: "elf",
+    format: "binary",
   },
   {
     id: "vendor_aes_so",
     filename: "vendor_aes_stripped.so",
     title: "Stripped vendor AES (.so)",
-    blurb: "Shared object, strip --strip-all — Linux firmware/vendor slice.",
+    blurb: "Shared object, strip --strip-all. Product-path demo.",
     expected: ["AES"],
-    format: "elf",
+    format: "binary",
   },
 ];
 
@@ -194,14 +194,14 @@ export function readSample(id: string): {
   filename: string;
   ir?: string;
   base64?: string;
-  format: "ir" | "elf";
+  format: "ir" | "binary";
 } | null {
   const meta = SAMPLE_CATALOG.find((s) => s.id === id);
   if (!meta) return null;
   try {
-    if (meta.format === "elf") {
+    if (meta.format === "binary") {
       const buf = readFileSync(path.join(corpusBinDir(), meta.filename));
-      return { filename: meta.filename, base64: buf.toString("base64"), format: "elf" };
+      return { filename: meta.filename, base64: buf.toString("base64"), format: "binary" };
     }
     const ir = readFileSync(path.join(corpusIrDir(), meta.filename), "utf8");
     return { filename: meta.filename, ir, format: "ir" };

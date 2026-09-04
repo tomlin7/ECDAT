@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
     if (!buf || buf.length === 0) {
       return NextResponse.json(
-        { error: "No file provided. Upload .ll / ELF / PE / object file, or paste LLVM IR." },
+        { error: "No file provided. Upload a compiled binary (ELF, PE, Mach-O, .o/.so/.exe, firmware dump), or paste LLVM IR only for lab use." },
         { status: 400 },
       );
     }
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "Unrecognized file. ECDAT accepts LLVM IR (.ll), ELF/PE objects, or bitcode. For C sources: clang -S -emit-llvm file.c — or upload the .o from clang -c.",
+            "Unrecognized file. Product input is a compiled image: ELF, PE, Mach-O, object/shared library, or raw firmware dump (max 8 MB). LLVM IR (.ll) is optional lab input. Source code is not accepted — compile it, then upload the binary.",
         },
         { status: 415 },
       );

@@ -256,9 +256,9 @@ export function Workbench() {
         items: [
           { id: "all", label: "All samples", count: samples.length },
           {
-            id: "elf",
-            label: "Binary (.o/.so)",
-            count: samples.filter((s) => s.format === "elf").length,
+            id: "binary",
+            label: "Binary (ELF/PE)",
+            count: samples.filter((s) => s.format === "binary").length,
           },
           {
             id: "ir",
@@ -280,8 +280,8 @@ export function Workbench() {
     return {
       title: "Ingest",
       items: [
-        { id: "upload", label: "Upload file" },
-        { id: "paste", label: "Paste IR" },
+          { id: "upload", label: "Upload binary" },
+          { id: "paste", label: "Paste IR (lab)" },
       ],
     };
   }, [view, report, samples, channelCounts]);
@@ -290,9 +290,9 @@ export function Workbench() {
     view === "discover"
       ? report
         ? report.filename
-        : "No artifact loaded"
+        : "No binary loaded"
       : view === "ingest"
-        ? "Ingest artifact"
+        ? "Upload binary"
         : view === "corpus"
           ? "Evaluation corpus"
           : "Enterprise inventory";
@@ -378,7 +378,7 @@ export function Workbench() {
   ) : (
     <Button size="sm" onClick={() => handleViewChange("ingest")}>
       <Upload />
-      Upload artifact
+      Upload binary
     </Button>
   );
 
@@ -410,7 +410,7 @@ export function Workbench() {
               onClick: () => handleViewChange("inventory"),
             }
           : {
-              label: "Analyze an artifact",
+              label: "Upload a binary",
               onClick: () => handleViewChange("ingest"),
             }
       }
@@ -522,12 +522,14 @@ function IngestView({
   return (
     <div className="mx-auto max-w-3xl">
       <WorkbenchPanel variant="accent">
-        <h2 className="text-[18px] font-semibold text-white">Ingest artifact</h2>
+        <h2 className="text-[18px] font-semibold text-white">Upload a compiled image</h2>
         <p className="mt-1 text-[13px] text-[#c4c1d2]">
-          LLVM IR, ELF/PE objects, or Clang{" "}
+          Product input is one binary: ELF, PE, Mach-O,{" "}
           <span className="font-mono">.o</span> /{" "}
-          <span className="font-mono">.so</span>. Max 8 MB. Analysis runs three
-          static channels: IR constant tables, CFG softmax, and raw-byte scan.
+          <span className="font-mono">.so</span> /{" "}
+          <span className="font-mono">.exe</span>, or a raw firmware dump. Max 8
+          MB. No compiler required. LLVM IR paste is lab-only — not the
+          enterprise path.
         </p>
         {showUpload ? (
           <label
@@ -551,7 +553,7 @@ function IngestView({
           >
             <Upload className="size-5 text-[#8b8794]" />
             <span className="text-[13px] text-[#c4c1d2]">
-              Drop <span className="font-mono">.ll / .o / ELF / PE</span> or
+              Drop <span className="font-mono">.so / .o / .exe / .bin</span> or
               browse
             </span>
             <input
@@ -571,7 +573,7 @@ function IngestView({
               <div className="flex items-center justify-between gap-3 border-b border-border bg-muted px-3 py-2.5">
                 <div className="min-w-0">
                   <p className="text-[13px] font-medium text-white">
-                    LLVM IR source
+                    LLVM IR (lab only)
                   </p>
                   <p className="truncate font-mono text-[11px] text-[#8b8794]">
                     {filename}
@@ -617,7 +619,7 @@ function IngestView({
             <div className="mt-3 flex items-center justify-end">
               <Button onClick={onAnalyze} disabled={loading || !ir.trim()}>
                 {loading ? <Loader2 className="animate-spin" /> : <FileCode2 />}
-                Analyze IR
+                Analyze pasted IR
               </Button>
             </div>
           </>
@@ -642,7 +644,7 @@ function CorpusView({
 }) {
   const q = searchQuery.trim().toLowerCase();
   const filtered = samples.filter((s) => {
-    if (section === "elf" && s.format !== "elf") return false;
+    if (section === "binary" && s.format !== "binary") return false;
     if (section === "ir" && s.format !== "ir") return false;
     if (!q) return true;
     return (
@@ -658,8 +660,8 @@ function CorpusView({
       <WorkbenchPanel className="mb-4" variant="elevated">
         <h2 className="text-[18px] font-semibold text-white">Evaluation corpus</h2>
         <p className="mt-1 text-[13px] text-[#c4c1d2]">
-          {samples.length} labeled samples for SIH demo — click any card to
-          analyze and jump to findings.
+          {samples.length} samples. Pitch path: binary cards. IR cards are lab
+          fixtures, not the product input.
         </p>
       </WorkbenchPanel>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -735,7 +737,7 @@ function DiscoverView({
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
         <Loader2 className="mr-2 size-5 animate-spin" />
-        Walking IR, matching constant tables…
+        Walking the file image…
       </div>
     );
   }
@@ -748,28 +750,28 @@ function DiscoverView({
     return (
       <WorkbenchPanel variant="accent">
         <h1 className="text-[22px] font-bold text-white">
-          Cryptographic discovery workbench
+          Cryptographic inventory of a compiled image
         </h1>
         <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-[#c4c1d2]">
-          ECDAT statically inventories primitives in LLVM IR and stripped
-          binaries using three independent channels — constant-table signatures,
-          CFG opcode softmax, and raw-byte anchors — with evidence attached to
-          every finding.
+          Give ECDAT a firmware dump, shared library, or executable. It
+          statically lists cryptographic primitives found in that file. You do
+          not need Clang, source, or LLVM IR. IR is a lab option, not the
+          product input.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           <Button onClick={onGoIngest}>
             <Upload />
-            Upload artifact
+            Upload binary
           </Button>
           <Button variant="tactile" onClick={onGoCorpus}>
-            Browse full corpus
+            Browse corpus
           </Button>
         </div>
         <h2 className="mt-8 text-[15px] font-semibold text-white">
-          Demo-ready samples
+          Demo — binary in, inventory out
         </h2>
         <p className="mt-1 text-[12px] text-[#a09aab]">
-          One click loads and analyzes — ideal for tomorrow&apos;s presentation.
+          Click a compiled sample. Do not start by pasting IR.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           {demoSamples.map((s) => (
@@ -795,18 +797,18 @@ function DiscoverView({
         </div>
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
           <ChannelCard
-            title="IR signatures"
-            detail="AES S-box, SHA K constants, ChaCha sigma"
+            title="Product path"
+            detail="Raw-byte tables in ELF / PE / firmware dumps"
             count={null}
           />
           <ChannelCard
-            title="CFG softmax"
-            detail="Opcode mix classifier on holdout corpus"
+            title="What you get"
+            detail="Primitive inventory, weak flags, JSON/HTML export"
             count={null}
           />
           <ChannelCard
-            title="Raw-byte scan"
-            detail="TLS OIDs, RSA exponents, Curve25519 clamp"
+            title="Not required"
+            detail="Clang, source code, or LLVM IR"
             count={null}
           />
         </div>
@@ -1096,13 +1098,13 @@ function InventoryView({
       <WorkbenchPanel variant="accent">
         <h2 className="text-[18px] font-semibold text-white">No inventory yet</h2>
         <p className="mt-2 max-w-lg text-[13px] text-[#c4c1d2]">
-          Run an analysis on an artifact first. ECDAT builds a cryptographic
-          inventory with asset metadata, primitive rows, and exportable JSON/HTML
-          reports for enterprise posture review.
+          Run an analysis on a compiled binary first. Output is a cryptographic
+          inventory: primitive rows, evidence, weak/deprecated flags, JSON/HTML
+          export.
         </p>
         <Button className="mt-4" onClick={onGoAnalyze}>
           <Upload />
-          Analyze an artifact
+          Analyze a binary
         </Button>
       </WorkbenchPanel>
     );

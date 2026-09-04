@@ -1,44 +1,51 @@
 # ECDAT — Enterprise Cryptographic Discovery & Analysis Tool
 
-SIH 2026 **SIH26164** (NTRO, Software, Blockchain & Cybersecurity).
+**Product definition:** [PRD.md](./PRD.md) (binding).
 
-Three static channels, no execution:
+SIH 2026 **SIH26164** (NTRO). Static inventory of cryptographic primitives in a **compiled binary or firmware image**. No execution. The operator does not need Clang, GCC, or any other compiler.
 
-1. **LLVM IR signatures** — FIPS/RFC constant tables and CFG opcode mix in `.ll`
-2. **CFG model** — softmax logistic regression on per-function opcode/graph features, trained on clean Clang IR, `-O1`/`-O2`, and structurally mutated IR (junk arithmetic + stripped names)
-3. **Raw binary scan** — AES S-box, SHA-1/256 K[], ChaCha sigma, MD5 T[], CRC-32 poly in ELF/PE file images
+## What you give it
 
-Weak/deprecated primitives (MD5, SHA-1, DES, CRC-32) are flagged. This is inventory, not evasion.
+| You have | ECDAT accepts it? |
+| --- | --- |
+| ELF / PE / Mach-O / `.o` / `.so` / `.exe` / raw firmware dump | **Yes — this is the product input** |
+| LLVM IR (`.ll`) | Optional lab input only, not the demo |
+| `.c` / other source | No. Compile it yourself; then upload the binary |
 
-## Run
+Max 8 MB. Upload on **Ingest**, or click a **binary** card on Discover / Corpus.
+
+## What you get
+
+A per-file **cryptographic inventory**: primitive, severity (including weak/deprecated), evidence, JSON + HTML export.
+
+This is inventory of *presence of known tables / patterns*, not proof of runtime use.
+
+## Demo (the only pitch path)
 
 ```bash
 npm install
-npm run corpus      # clang → IR + .o  (needs clang)
-npm run train       # writes lib/ml/model.json
-npm run verify
-npm run dev         # http://127.0.0.1:43147
+npm run dev          # http://127.0.0.1:43147
 ```
 
-Click **Enterprise mix (IR)** then **AES ELF object**.
+1. Open the workbench (Discover).
+2. Click a **stripped binary** sample (e.g. **Stripped vendor AES (.so)** or **PE firmware blob**).
+3. Read the inventory. Export JSON/HTML.
 
-### Your own code
+Do not start the demo by pasting IR or running Clang.
+
+### Lab / corpus (developers, not the pitch)
 
 ```bash
-clang -S -emit-llvm -O0 -fno-discard-value-names -o module.ll your.c
-clang -c -O0 -o module.o your.c
+npm run corpus      # clang → IR + .o  (needs clang; for labeled samples only)
+npm run train
+npm run verify
 ```
-
-Drop either file on the ingest panel.
 
 ## Layout
 
-- `lib/ir/` — parse, signatures, IR obfuscation used only as a **training augmenter**
-- `lib/ml/` — features, trainer, `model.json`
-- `lib/binary/` — ELF/PE/Mach-O magic + constant-table scan
-- `lib/pipeline.ts` — fuses the three channels
-- `corpus/src` C · `corpus/ir` LLVM · `corpus/bin` objects
-
-## Stack
-
-Next.js · TypeScript · Tailwind · shadcn/ui · Clang LLVM IR
+- `PRD.md` — purpose, audience, input, output
+- `lib/binary/` — ELF/PE/Mach-O magic + constant-table scan (**product path**)
+- `lib/ir/` — LLVM IR parse + signatures (**lab path**)
+- `lib/ml/` — CFG opcode model on IR functions (**lab path**)
+- `lib/pipeline.ts` — routes a file to the channels that apply
+- `corpus/bin` — demo binaries · `corpus/ir` — lab IR
